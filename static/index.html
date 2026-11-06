@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <title>SENTRIX | Lab operations</title>
+  <link rel="icon" type="image/jpeg" href="/static/logo.jpg">
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b1220;
+      color: #e5edf8;
+      --panel: #111b2b;
+      --panel-raised: #152238;
+      --line: #25354c;
+      --muted: #9aaac0;
+      --cyan: #67d9e8;
+      --green: #63d3a0;
+      --amber: #f1c778;
+      --red: #fb8e95;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: radial-gradient(ellipse at 75% -20%, #18314b 0, transparent 44%), #0b1220; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+    .shell { max-width: 1440px; margin: auto; padding: 28px clamp(16px, 3vw, 42px) 48px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .logo { width: 42px; height: 42px; border: 1px solid #33526d; border-radius: 12px; object-fit: cover; }
+    .brand-name { margin: 0; color: #fff; font-size: 17px; letter-spacing: .13em; }
+    .brand-subtitle { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .mode-pill, .clock, .button { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: #dce8f6; }
+    .mode-pill, .clock { min-height: 38px; padding: 0 12px; font-size: 12px; }
+    .mode-pill { font-weight: 700; letter-spacing: .08em; }
+    .mode-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px #63d3a066; }
+    .mode-pill.live .mode-dot { background: var(--amber); box-shadow: 0 0 12px #f1c77866; }
+    .clock { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .button { justify-content: center; min-height: 38px; padding: 8px 13px; transition: background .18s ease, border-color .18s ease, transform .18s ease; }
+    .button:hover { background: var(--panel-raised); border-color: #42607e; }
+    .button:active { transform: translateY(1px); }
+    .button.primary { border-color: #287c8b; background: #123744; color: #b6f3f8; }
+    .button.primary:hover { background: #174755; }
+    .button.restore { border-color: #28684f; background: #123126; color: #b8efd5; }
+    .button:disabled { cursor: not-allowed; opacity: .55; }
+    main { padding-top: 30px; }
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+    .intro-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 9px; }
+    .mode-select { min-height: 38px; max-width: 220px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: #dce8f6; }
+    .eyebrow { color: var(--cyan); font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { margin: 7px 0 5px; color: #fff; font-size: clamp(24px, 4vw, 34px); letter-spacing: -.035em; }
+    .intro p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .subtle { color: var(--muted); font-size: 12px; }
+    .metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 26px; }
+    .metric, .panel, .device-card { border: 1px solid var(--line); border-radius: 13px; background: linear-gradient(150deg, #121d2e, #101827); }
+    .metric { min-height: 118px; padding: 17px 18px; }
+    .metric-label { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12px; }
+    .metric-value { margin-top: 14px; color: #fff; font-size: 28px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+    .metric-note { margin-top: 4px; color: #8293aa; font-size: 11px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(290px, .75fr); gap: 18px; align-items: start; }
+    .column { display: grid; gap: 18px; min-width: 0; }
+    .panel { overflow: hidden; }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 19px; border-bottom: 1px solid var(--line); }
+    .panel-title { display: flex; align-items: center; gap: 9px; margin: 0; color: #f3f7fd; font-size: 14px; font-weight: 650; }
+    .panel-title .accent { width: 7px; height: 7px; border-radius: 2px; background: var(--cyan); }
+    .panel-body { padding: 18px; }
+    .device-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .device-card { padding: 15px; animation: appear .24s ease both; }
+    .device-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .device-name { margin: 0; color: #f3f7fd; font-size: 13px; overflow-wrap: anywhere; }
+    .device-address { margin-top: 5px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; }
+    .badge { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+    .badge.secure { color: var(--green); border-color: #28684f; background: #123126; }
+    .badge.isolated { color: var(--red); border-color: #783b47; background: #351e29; }
+    .badge.review { color: var(--amber); border-color: #6b5633; background: #302719; }
+    .device-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; padding: 12px 0; border-top: 1px solid #223147; border-bottom: 1px solid #223147; }
+    .detail-label { color: #8495ac; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; }
+    .detail-value { margin-top: 5px; color: #d8e4f2; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; overflow-wrap: anywhere; }
+    .device-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .device-role { color: var(--muted); font-size: 11px; }
+    .device-footer .button { min-height: 32px; padding: 6px 9px; font-size: 11px; }
+    .device-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+    .approval-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .approval-actions .button { min-height: 32px; padding: 6px 9px; font-size: 11px; }
+    .operation { display: grid; gap: 13px; }
+    .operation-row { display: flex; justify-content: space-between; gap: 14px; font-size: 12px; }
+    .operation-row span:first-child { color: var(--muted); }
+    .operation-row span:last-child { color: #e7eef8; text-align: right; overflow-wrap: anywhere; }
+    .operation-message { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .result-success { color: var(--green) !important; }
+    .result-failed { color: var(--red) !important; }
+    .activity-list { display: grid; gap: 0; }
+    .activity-item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 11px; padding: 12px 0; border-bottom: 1px solid #213047; }
+    .activity-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .activity-mark { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    .activity-mark.failed { background: var(--red); }
+    .activity-title { color: #e7eef8; font-size: 12px; }
+    .activity-meta { margin-top: 4px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; }
+    .activity-time { color: #8798ae; font-size: 10px; white-space: nowrap; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 720px; text-align: left; }
+    th { padding: 11px 15px; color: #8293aa; background: #101927; font-size: 10px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+    td { padding: 13px 15px; border-top: 1px solid #223147; color: #d8e4f2; font-size: 11px; vertical-align: top; }
+    .ticket-id { color: var(--cyan); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 700; }
+    .signature { max-width: 220px; overflow-wrap: anywhere; color: #c9d6e5; }
+    .cli-view { margin-top: 8px; }
+    .cli-view summary { color: var(--cyan); cursor: pointer; font-size: 10px; }
+    .cli-view pre { max-width: 360px; max-height: 180px; overflow: auto; margin: 8px 0 0; padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: #0a111d; color: #b6d2e8; font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .empty, .loading, .error-state { padding: 28px 16px; color: var(--muted); text-align: center; font-size: 12px; line-height: 1.6; }
+    .error-state { color: #ffc0c3; }
+    .skeleton { display: block; height: 12px; margin: 8px auto; border-radius: 6px; background: linear-gradient(90deg, #152238, #22334b, #152238); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+    .toast { position: fixed; right: 20px; bottom: 20px; z-index: 4; max-width: min(420px, calc(100vw - 40px)); padding: 13px 16px; border: 1px solid #38536b; border-radius: 10px; background: #17263a; color: #edf5ff; box-shadow: 0 14px 40px #0006; opacity: 0; transform: translateY(9px); pointer-events: none; transition: opacity .2s ease, transform .2s ease; font-size: 13px; }
+    .toast.visible { opacity: 1; transform: translateY(0); }
+    dialog { width: min(440px, calc(100% - 32px)); padding: 0; border: 1px solid #39536d; border-radius: 13px; background: #111b2b; color: #e5edf8; box-shadow: 0 24px 80px #000a; }
+    dialog::backdrop { background: #050912bf; backdrop-filter: blur(3px); }
+    .dialog-content { padding: 22px; }
+    .dialog-content h2 { margin: 0 0 8px; color: #fff; font-size: 18px; }
+    .dialog-content p { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .dialog-content label { display: block; margin: 14px 0 6px; color: #c9d6e5; font-size: 12px; }
+    .dialog-content input[type=password] { width: 100%; padding: 10px 11px; border: 1px solid var(--line); border-radius: 8px; background: #0b1220; color: #fff; }
+    .confirm-check { display: flex !important; align-items: flex-start; gap: 9px; line-height: 1.5; }
+    .confirm-check input { margin-top: 3px; accent-color: #36b9c9; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
+    footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); color: #8293aa; font-size: 11px; }
+    @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .device-list { grid-template-columns: 1fr; } .clock { display: none; } .topbar { align-items: flex-start; } .top-actions { flex-wrap: wrap; justify-content: flex-end; } }
+    @media (max-width: 760px) { .intro { align-items: flex-start; flex-direction: column; } .intro-actions { justify-content: flex-start; } }
+    @media (max-width: 460px) { .shell { padding-top: 18px; } .brand-subtitle { max-width: 175px; line-height: 1.4; } .topbar { gap: 8px; } .top-actions { gap: 7px; } .mode-pill { padding: 0 9px; } .intro { display: block; } .intro-actions { margin-top: 14px; } .mode-select { max-width: 100%; } .metrics { gap: 9px; } .metric { min-height: 106px; padding: 13px; } .metric-value { font-size: 24px; } footer { flex-direction: column; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <img class="logo" src="/static/logo.jpg" alt="">
+        <div>
+          <p class="brand-name">SENTRIX</p>
+          <p class="brand-subtitle">Authorized lab operations</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div id="mode-pill" class="mode-pill" aria-label="Application mode">
+          <span class="mode-dot" aria-hidden="true"></span><span id="mode-label">Loading mode</span>
+        </div>
+        <div class="clock" id="clock" aria-label="Local time"></div>
+        <button class="button" type="button" id="refresh-button">Refresh</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <div class="eyebrow">Lab operations dashboard</div>
+          <h1 id="page-title">Containment overview</h1>
+          <p>Inventory, test alerts and verified port state for your configured GNS3 lab.</p>
+        </div>
+        <div class="intro-actions" aria-label="MOCK feature demonstrations">
+          <label class="subtle" for="containment-mode">Containment</label>
+          <select class="mode-select" id="containment-mode">
+            <option value="vlan">VLAN Quarantine + Port Bounce</option>
+            <option value="acl">Surgical ACL Block</option>
+          </select>
+          <button class="button primary" type="button" id="test-alert-button">Simulate Attack</button>
+          <button class="button" type="button" id="unknown-host-button">Test Unknown Host (Auto-Discover)</button>
+          <button class="button" type="button" id="critical-alert-button">Test Critical Server Alert</button>
+        </div>
+      </section>
+
+      <section class="metrics" aria-label="System summary" aria-live="polite">
+        <article class="metric"><div class="metric-label">Recorded alerts <span aria-hidden="true">↗</span></div><div class="metric-value" id="metric-alerts">—</div><div class="metric-note">Containment tickets</div></article>
+        <article class="metric"><div class="metric-label">Isolated ports <span aria-hidden="true">◇</span></div><div class="metric-value" id="metric-isolated">—</div><div class="metric-note">Requires verified restore</div></article>
+        <article class="metric"><div class="metric-label">Pending approvals <span aria-hidden="true">!</span></div><div class="metric-value" id="metric-approvals">—</div><div class="metric-note">Critical assets awaiting review</div></article>
+        <article class="metric"><div class="metric-label">SPAN sessions <span aria-hidden="true">⌁</span></div><div class="metric-value" id="metric-span">—</div><div class="metric-note">Explicitly configured sessions</div></article>
+        <article class="metric"><div class="metric-label">Switches in inventory <span aria-hidden="true">▦</span></div><div class="metric-value" id="metric-switches">—</div><div class="metric-note">MOCK or allowlisted lab devices</div></article>
+      </section>
+
+      <div class="layout">
+        <div class="column">
+          <section class="panel" aria-labelledby="inventory-title">
+            <div class="panel-header">
+              <h2 class="panel-title" id="inventory-title"><span class="accent"></span>Device inventory</h2>
+              <span class="subtle" id="inventory-count">Loading…</span>
+            </div>
+            <div class="panel-body"><div id="device-list" class="device-list"><div class="loading">Loading inventory…<span class="skeleton" style="width:60%"></span></div></div></div>
+          </section>
+
+          <section class="panel" aria-labelledby="tickets-title">
+            <div class="panel-header">
+              <h2 class="panel-title" id="tickets-title"><span class="accent"></span>Alert and ticket history</h2>
+              <span class="subtle" id="ticket-count">0 tickets</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Ticket</th><th>Time (UTC)</th><th>Host / target</th><th>Alert / CLI</th><th>VLAN</th><th>Execution</th><th>Status</th></tr></thead>
+                <tbody id="ticket-list"><tr><td class="loading" colspan="7">Loading ticket history…</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <aside class="column">
+          <section class="panel" aria-labelledby="last-operation-title">
+            <div class="panel-header"><h2 class="panel-title" id="last-operation-title"><span class="accent"></span>Last operation</h2></div>
+            <div class="panel-body" id="last-operation"><div class="loading">Waiting for system status…</div></div>
+          </section>
+          <section class="panel" aria-labelledby="activity-title">
+            <div class="panel-header"><h2 class="panel-title" id="activity-title"><span class="accent"></span>Recent alerts</h2><span class="subtle">Latest first</span></div>
+            <div class="panel-body"><div class="activity-list" id="activity-list"><div class="empty">No alerts recorded.</div></div></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><h2 class="panel-title"><span class="accent"></span>Live safety</h2></div>
+            <div class="panel-body">
+              <p class="operation-message">LIVE is selected only at startup with local lab configuration. Each network change also requires a live-change token and an explicit confirmation. Simulation is MOCK-only.</p>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </main>
+    <footer><span>SENTRIX · GNS3 lab console</span><span>Network changes are limited to locally allowlisted inventory entries.</span></footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="change-dialog" aria-labelledby="dialog-title">
+    <form method="dialog" class="dialog-content" id="change-form">
+      <h2 id="dialog-title">Confirm lab network change</h2>
+      <p id="dialog-description">Review the target before continuing.</p>
+      <label for="live-token">Live-change token <span class="subtle">(required in LIVE only)</span></label>
+      <input id="live-token" type="password" autocomplete="off" placeholder="Enter token from your local environment">
+      <div id="approval-token-group" hidden>
+        <label for="approval-token">Approval-specific token <span class="subtle">(required for LIVE approvals)</span></label>
+        <input id="approval-token" type="password" autocomplete="off" placeholder="Enter the separate approval token">
+      </div>
+      <label class="confirm-check"><input id="confirm-lab" type="checkbox"><span>I confirm this change is intended for my authorized GNS3 lab.</span></label>
+      <div class="dialog-actions">
+        <button class="button" value="cancel" type="submit">Cancel</button>
+        <button class="button restore" id="confirm-change-button" value="confirm" type="submit">Confirm change</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    "use strict";
+    const state = { mode: "MOCK", inventory: [], tickets: [], busy: false, pending: null };
+    const byId = (id) => document.getElementById(id);
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[char]);
+    let toastTimer;
+
+    function showToast(message) {
+      const toast = byId("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 3600);
+    }
+
+    function statusBadge(status) {
+      if (status === "ISOLATED") return '<span class="badge isolated">Isolated</span>';
+      if (status === "PENDING_APPROVAL") return '<span class="badge review">Approval pending</span>';
+      if (status === "ERROR_REQUIRES_REVIEW") return '<span class="badge review">Needs review</span>';
+      if (status === "ISOLATING" || status === "RESTORING") return '<span class="badge review">In progress</span>';
+      return '<span class="badge secure">Secure</span>';
+    }
+
+    function renderInventory() {
+      const container = byId("device-list");
+      byId("inventory-count").textContent = `${state.inventory.length} device${state.inventory.length === 1 ? "" : "s"}`;
+      if (!state.inventory.length) {
+        container.innerHTML = '<div class="empty" style="grid-column:1/-1">No inventory records yet. Add explicitly scoped lab devices to the local inventory.</div>';
+        return;
+      }
+      container.innerHTML = state.inventory.map((item, index) => {
+        const isolated = item.port_status === "ISOLATED";
+        const canRestore = isolated && item.previous_vlan !== null;
+        const action = item.port_status === "PENDING_APPROVAL"
+          ? `<div class="approval-actions"><button class="button restore" data-action="approve" data-ip="${escapeHtml(item.host_ip)}">Approve</button><button class="button" data-action="reject" data-ip="${escapeHtml(item.host_ip)}">Reject</button></div>`
+          : canRestore
+          ? `<button class="button restore" data-action="restore" data-ip="${escapeHtml(item.host_ip)}">Restore</button>`
+          : item.port_status === "SECURE" && state.mode === "MOCK"
+            ? `<button class="button" data-action="test" data-ip="${escapeHtml(item.host_ip)}">Test alert</button>`
+            : "";
+        const reconcile = state.mode === "LIVE"
+          && ["SECURE", "PENDING_APPROVAL", "ISOLATED"].includes(item.port_status)
+          ? `<button class="button" data-action="reconcile" data-ip="${escapeHtml(item.host_ip)}">Check switch state</button>`
+          : "";
+        const span = item.span_status === "DISABLED" ? "Off" : item.span_status;
+        return `<article class="device-card" style="animation-delay:${Math.min(index * 35, 180)}ms">
+          <div class="device-top"><div><h3 class="device-name">${escapeHtml(item.switch_hostname)}</h3><div class="device-address">${escapeHtml(item.switch_ip)} · ${escapeHtml(item.switch_vendor)}</div></div>${statusBadge(item.port_status)}</div>
+          <div class="device-details">
+            <div><div class="detail-label">Host</div><div class="detail-value">${escapeHtml(item.host_ip)}</div></div>
+            <div><div class="detail-label">Port</div><div class="detail-value">${escapeHtml(item.port_interface)}</div></div>
+            <div><div class="detail-label">Current VLAN</div><div class="detail-value">${escapeHtml(item.current_vlan)}</div></div>
+            <div><div class="detail-label">SPAN</div><div class="detail-value">${escapeHtml(span)}</div></div>
+          </div>
+          <div class="device-footer"><span class="device-role">${escapeHtml(item.port_role)}</span><div class="device-actions">${action}${reconcile}</div></div>
+        </article>`;
+      }).join("");
+      container.querySelectorAll("button[data-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.action === "test") runTest(button.dataset.ip);
+          if (button.dataset.action === "restore") askForChange("restore", button.dataset.ip);
+          if (button.dataset.action === "approve" || button.dataset.action === "reject") askForChange(button.dataset.action, button.dataset.ip);
+          if (button.dataset.action === "reconcile") askForChange("reconcile", button.dataset.ip);
+        });
+      });
+    }
+
+    function renderTickets() {
+      const tbody = byId("ticket-list");
+      byId("ticket-count").textContent = `${state.tickets.length} ticket${state.tickets.length === 1 ? "" : "s"}`;
+      if (!state.tickets.length) {
+        tbody.innerHTML = '<tr><td class="empty" colspan="7">No alerts yet. Use a MOCK test alert to verify the workflow.</td></tr>';
+        byId("activity-list").innerHTML = '<div class="empty">No recent alerts.</div>';
+        return;
+      }
+      tbody.innerHTML = state.tickets.map((ticket) => {
+        const timestamp = new Date(ticket.timestamp);
+        const time = Number.isNaN(timestamp.getTime()) ? "—" : timestamp.toISOString().replace("T", " ").slice(0, 19);
+        const badge = ticket.ticket_status === "CONTAINED"
+          ? '<span class="badge isolated">Contained</span>'
+          : '<span class="badge secure">Resolved</span>';
+        return `<tr>
+          <td class="ticket-id">${escapeHtml(ticket.ticket_id)}</td>
+          <td>${escapeHtml(time)}</td>
+          <td><span>${escapeHtml(ticket.attacker_ip)}</span><br><span class="subtle">→ ${escapeHtml(ticket.target_ip)}</span></td>
+          <td class="signature">${escapeHtml(ticket.signature)}<details class="cli-view"><summary>Show executed CLI</summary><pre>${escapeHtml(ticket.executed_cli || "[]")}</pre></details></td>
+          <td>${escapeHtml(ticket.assigned_vlan)}</td>
+          <td>${Number(ticket.execution_time_ms).toFixed(1)} ms</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join("");
+      byId("activity-list").innerHTML = state.tickets.slice(0, 5).map((ticket) => {
+        const date = new Date(ticket.timestamp);
+        const time = Number.isNaN(date.getTime()) ? "—" : date.toLocaleTimeString();
+        return `<div class="activity-item"><span class="activity-mark ${ticket.ticket_status === "CONTAINED" ? "" : "failed"}"></span><div><div class="activity-title">${escapeHtml(ticket.signature)}</div><div class="activity-meta">${escapeHtml(ticket.attacker_ip)} · ${escapeHtml(ticket.ticket_id)}</div></div><time class="activity-time">${escapeHtml(time)}</time></div>`;
+      }).join("");
+    }
+
+    function renderLastOperation(operation) {
+      const panel = byId("last-operation");
+      if (!operation) {
+        panel.innerHTML = '<div class="empty">No operation has been run yet.</div>';
+        return;
+      }
+      const date = new Date(operation.completed_at);
+      const completed = Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
+      const resultClass = operation.result === "SUCCESS" ? "result-success" : "result-failed";
+      panel.innerHTML = `<div class="operation">
+        <div class="operation-row"><span>Action</span><span>${escapeHtml(operation.action)}</span></div>
+        <div class="operation-row"><span>Host</span><span>${escapeHtml(operation.host_ip)}</span></div>
+        <div class="operation-row"><span>Result</span><span class="${resultClass}">${escapeHtml(operation.result)}</span></div>
+        <div class="operation-row"><span>Completed</span><span>${escapeHtml(completed)}</span></div>
+        <p class="operation-message">${escapeHtml(operation.message)}</p>
+      </div>`;
+    }
+
+    function render(data) {
+      state.mode = data.metrics.engine_mode;
+      state.inventory = data.inventory;
+      state.tickets = data.tickets;
+      byId("mode-label").textContent = state.mode;
+      byId("mode-pill").classList.toggle("live", state.mode === "LIVE");
+      byId("test-alert-button").hidden = state.mode !== "MOCK";
+      byId("unknown-host-button").hidden = state.mode !== "MOCK";
+      byId("critical-alert-button").hidden = state.mode !== "MOCK";
+      byId("metric-alerts").textContent = data.metrics.total_alerts;
+      byId("metric-isolated").textContent = data.metrics.currently_isolated;
+      byId("metric-approvals").textContent = data.metrics.pending_approvals;
+      byId("metric-span").textContent = data.metrics.active_span_sessions;
+      byId("metric-switches").textContent = data.metrics.monitored_switches;
+      byId("metric-span").title = `Average operation execution time: ${Number(data.metrics.average_execution_time_ms).toFixed(1)} ms`;
+      renderInventory();
+      renderTickets();
+      renderLastOperation(data.last_operation);
+    }
+
+    async function request(url, options = {}) {
+      const response = await fetch(url, { ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}) } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.detail || `Request failed (${response.status}).`);
+      return payload;
+    }
+
+    async function refresh() {
+      const button = byId("refresh-button");
+      button.disabled = true;
+      try {
+        render(await request("/api/state"));
+      } catch (error) {
+        byId("device-list").innerHTML = `<div class="error-state" style="grid-column:1/-1">${escapeHtml(error.message)}<br><button class="button" style="margin-top:12px" id="retry-button">Retry</button></div>`;
+        byId("retry-button").addEventListener("click", refresh);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function runTest(ip) {
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        await request("/api/simulate/attack", {
+          method: "POST",
+          body: JSON.stringify({
+            ...(ip ? { attacker_ip: ip } : {}),
+            containment_mode: byId("containment-mode").value
+          })
+        });
+        showToast(ip === "192.168.10.100"
+          ? "Critical server alert queued for human approval."
+          : ip === "192.168.10.77"
+            ? "Unknown host discovered and the MOCK alert was processed."
+            : "MOCK test alert processed successfully.");
+        await refresh();
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function askForChange(action, ip) {
+      const record = state.inventory.find((item) => item.host_ip === ip);
+      if (!record) return;
+      if (state.mode === "MOCK") {
+        const message = action === "restore"
+          ? `Restore ${ip} to its saved pre-isolation state?`
+          : action === "approve"
+            ? `Approve and contain the pending critical asset alert for ${ip}?`
+            : action === "reject"
+              ? `Reject the pending critical asset alert for ${ip}?`
+              : `Run a MOCK test alert for ${ip}?`;
+        if (window.confirm(message)) {
+          if (action === "restore") executeChange(action, ip);
+          else if (action === "approve" || action === "reject") executeChange(action, ip);
+          else runTest(ip);
+        }
+        return;
+      }
+      state.pending = { action, ip };
+      const description = action === "restore"
+        ? "Restore saved port state on"
+        : action === "approve"
+          ? "Approve containment for"
+          : action === "reject"
+            ? "Reject the pending alert for"
+            : action === "reconcile"
+              ? "Read-only state check for"
+              : "Isolate";
+      byId("dialog-title").textContent = action === "reconcile"
+        ? "Check switch state"
+        : "Confirm lab network change";
+      byId("dialog-description").textContent = action === "reconcile"
+        ? `Read current VLAN, description, ACL, and configured SPAN state for ${record.switch_hostname}, port ${record.port_interface}, host ${ip}. This check does not change switch configuration.`
+        : `${description} ${record.switch_hostname} (${record.switch_ip}), port ${record.port_interface}, host ${ip}. This action is recorded and requires the live-change token.`;
+      byId("live-token").value = "";
+      byId("approval-token").value = "";
+      byId("approval-token-group").hidden = !["approve", "reject"].includes(action);
+      byId("confirm-lab").checked = false;
+      byId("change-dialog").showModal();
+      byId("live-token").focus();
+    }
+
+    async function executeChange(action, ip, token = "", approvalToken = "") {
+      if (state.busy) return;
+      setBusy(true);
+      const headers = state.mode === "LIVE" ? {
+        "X-SENTRIX-LIVE-TOKEN": token,
+        "X-CONFIRM-LIVE-CHANGE": "I_CONFIRM_GNS3_LAB_CHANGE"
+      } : {};
+      if (state.mode === "LIVE" && ["approve", "reject"].includes(action)) {
+        headers["X-SENTRIX-APPROVAL-TOKEN"] = approvalToken;
+      }
+      try {
+        if (action === "reconcile") {
+          const result = await request(
+            `/api/reconcile/${encodeURIComponent(ip)}`, { headers }
+          );
+          showToast(result.status === "IN_SYNC"
+            ? "Switch configuration matches the stored state."
+            : `State drift detected: ${result.drift.join(", ")}.`);
+        } else if (action === "restore") {
+          await request(`/api/ports/${encodeURIComponent(ip)}/restore`, { method: "POST", headers });
+          showToast("Port restored to its saved state.");
+        } else if (action === "approve" || action === "reject") {
+          const result = await request(
+            `/api/approvals/${encodeURIComponent(ip)}/${action}`,
+            { method: "POST", headers }
+          );
+          showToast(action === "approve"
+            ? (result.status === "PENDING_APPROVAL" ? "Approval remains pending." : "Alert approved and containment completed.")
+            : "Critical asset alert rejected.");
+        } else {
+          await request("/api/webhook/alert", {
+            method: "POST", headers,
+            body: JSON.stringify({
+              attacker_ip: ip,
+              target_ip: "192.168.10.100",
+              signature: "SENTRIX analyst-confirmed lab alert",
+              severity: 2,
+              containment_mode: byId("containment-mode").value
+            })
+          });
+          showToast("Containment completed and verified.");
+        }
+        await refresh();
+      } catch (error) {
+        showToast(error.message);
+        await refresh();
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function setBusy(busy) {
+      state.busy = busy;
+      document.querySelectorAll(".intro-actions button, .intro-actions select").forEach((button) => { button.disabled = busy; });
+      byId("refresh-button").disabled = busy;
+      document.querySelectorAll(".device-card button").forEach((button) => { button.disabled = busy; });
+    }
+
+    byId("change-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const submitter = event.submitter;
+      const dialog = byId("change-dialog");
+      if (submitter?.value !== "confirm") {
+        dialog.close();
+        state.pending = null;
+        return;
+      }
+      if (!byId("confirm-lab").checked) {
+        showToast("Confirm that this change targets your authorized lab.");
+        return;
+      }
+      const pending = state.pending;
+      const token = byId("live-token").value;
+      const approvalToken = byId("approval-token").value;
+      if (!pending) {
+        dialog.close();
+        return;
+      }
+      dialog.close();
+      state.pending = null;
+      executeChange(pending.action, pending.ip, token, approvalToken);
+      byId("live-token").value = "";
+      byId("approval-token").value = "";
+    });
+
+    byId("test-alert-button").addEventListener("click", () => runTest());
+    byId("unknown-host-button").addEventListener("click", () => runTest("192.168.10.77"));
+    byId("critical-alert-button").addEventListener("click", () => runTest("192.168.10.100"));
+    byId("refresh-button").addEventListener("click", refresh);
+    function updateClock() { byId("clock").textContent = new Date().toLocaleTimeString([], { hour12: false }) + " local"; }
+    updateClock();
+    setInterval(updateClock, 1000);
+    refresh();
+    setInterval(refresh, 15000);
+  </script>
+</body>
+</html>
