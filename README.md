@@ -32,6 +32,12 @@ Open <http://127.0.0.1:8000>. MOCK is the default if `SENTRIX_MODE` is omitted. 
 
 The local database defaults to `sentrix.db` beside `database.py`. Set `SENTRIX_DB_PATH` to an absolute path or a path relative to the project directory to use another SQLite file. The database, WAL files, and local configuration are ignored by Git.
 
+## Publish a public MOCK demo on Render
+
+The repository includes a Render Blueprint at `render.yaml`. Open the [Render deployment page](https://render.com/deploy?repo=https://github.com/AHMED8781/sentrix-core), sign in, review the Blueprint, and choose **Apply**. Render will build the app and provide a public `onrender.com` URL when deployment is ready.
+
+This Blueprint pins `SENTRIX_MODE=MOCK`; do not change it to LIVE for a public service. The demo has no user authentication, so anyone with its URL can view the inventory and create simulated alerts. Its SQLite database is stored on the ephemeral filesystem and may be reset when Render restarts or redeploys the free service. Never add switch credentials, live-change tokens, approval tokens, or a real `lab-config.json` to this public deployment.
+
 ## Prepare an isolated GNS3 lab
 
 1. Use a disposable GNS3 project and switch images with console access and a recoverable startup configuration. Snapshot the project and confirm out-of-band recovery before enabling LIVE.
