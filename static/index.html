@@ -47,19 +47,58 @@
     .button.restore { border-color: #28684f; background: #123126; color: #b8efd5; }
     .button:disabled { cursor: not-allowed; opacity: .55; }
     main { padding-top: 30px; }
-    .intro { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
-    .intro-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 9px; }
-    .mode-select { min-height: 38px; max-width: 220px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: #dce8f6; }
-    .eyebrow { color: var(--cyan); font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
-    h1 { margin: 7px 0 5px; color: #fff; font-size: clamp(24px, 4vw, 34px); letter-spacing: -.035em; }
-    .intro p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
-    .subtle { color: var(--muted); font-size: 12px; }
-    .metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 26px; }
+    .intro { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(330px, .9fr); gap: 28px; align-items: center; margin: 28px 0 18px; padding: clamp(22px, 4vw, 42px); border: 1px solid #2a4960; border-radius: 18px; background: radial-gradient(ellipse at 82% 10%, #1d506033, transparent 38%), linear-gradient(130deg, #14253a, #101a2a 66%, #10212d); box-shadow: 0 22px 65px #02071144; }
+    .hero-copy { max-width: 680px; }
+    .hero-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--cyan); font-size: 11px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
+    .hero-kicker::before { content: ""; width: 18px; height: 1px; background: var(--cyan); }
+    h1 { margin: 12px 0 10px; color: #fff; font-size: clamp(30px, 4.6vw, 48px); line-height: 1.08; letter-spacing: -.045em; }
+    .intro p { max-width: 610px; margin: 0; color: #b2c1d3; font-size: 15px; line-height: 1.7; }
+    .hero-proof { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .proof-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid #30445c; border-radius: 999px; background: #0c1726a8; color: #c8d6e5; font-size: 11px; }
+    .proof-chip strong { color: #fff; font-weight: 650; }
+    .hero-side { display: grid; gap: 12px; }
+    .demo-mode-note { display: flex; align-items: flex-start; gap: 11px; padding: 13px 15px; border: 1px solid #6b5633; border-radius: 11px; background: #30271999; color: #f0d39a; font-size: 12px; line-height: 1.5; }
+    .demo-mode-note strong { display: block; color: #ffe4ab; font-size: 11px; letter-spacing: .09em; }
+    .demo-console { padding: 17px; border: 1px solid #2b4259; border-radius: 13px; background: #0b1421b8; }
+    .demo-console-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .demo-console-title { margin: 0; color: #f5f8fc; font-size: 14px; font-weight: 700; }
+    .demo-console-copy { margin: 5px 0 0 !important; color: var(--muted) !important; font-size: 11px !important; line-height: 1.5 !important; }
+    .demo-step-count { flex: 0 0 auto; padding: 5px 8px; border: 1px solid #2e455b; border-radius: 7px; color: #afc0d3; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .demo-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; }
+    .button.large { min-height: 44px; padding: 10px 15px; font-weight: 700; }
+    .button.secondary { background: #162538; }
+    .demo-settings { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 11px; padding-top: 11px; border-top: 1px solid #243448; }
+    .demo-settings label { color: #a7b6c8; font-size: 11px; }
+    .mode-select { width: 100%; min-height: 36px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: #e4edf7; font-size: 11px; }
+    .quick-scenarios { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+    .quick-scenarios .button { min-height: 33px; padding: 6px 9px; font-size: 10px; }
+    .subtle { color: #b0bfd0; font-size: 12px; }
+    .workflow { margin: 0 0 20px; padding: 17px 19px; border: 1px solid var(--line); border-radius: 13px; background: linear-gradient(110deg, #111c2c, #101a29); }
+    .workflow-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+    .workflow-title { margin: 0; color: #f0f5fb; font-size: 13px; font-weight: 700; }
+    .workflow-caption { color: #9aacc0; font-size: 10px; }
+    .workflow-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .workflow-step { position: relative; display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 9px; min-width: 0; padding: 9px 10px; border: 1px solid #25364a; border-radius: 9px; background: #0c1522; }
+    .workflow-step::after { content: ""; position: absolute; top: 50%; left: 100%; width: 10px; height: 1px; background: #34495e; }
+    .workflow-step:last-child::after { display: none; }
+    .workflow-number { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid #34495e; border-radius: 50%; color: #9eafc1; font: 11px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .workflow-label { color: #bac8d7; font-size: 11px; font-weight: 650; }
+    .workflow-status { display: block; margin-top: 3px; color: #8193a8; font-size: 9px; }
+    .workflow-step.done { border-color: #28684f; background: #10251f; }
+    .workflow-step.done .workflow-number { border-color: #378562; background: #14392b; color: #8de0b5; }
+    .workflow-step.done .workflow-status { color: #8ddbb3; }
+    .workflow-step.active { border-color: #327488; background: #102631; box-shadow: inset 0 0 0 1px #2c667333; }
+    .workflow-step.active .workflow-number { border-color: #3a9aaa; color: #8de9f2; }
+    .workflow-step.active .workflow-status { color: #85d9e3; }
+    .metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 23px; }
     .metric, .panel, .device-card { border: 1px solid var(--line); border-radius: 13px; background: linear-gradient(150deg, #121d2e, #101827); }
-    .metric { min-height: 118px; padding: 17px 18px; }
+    .metric { position: relative; min-height: 112px; padding: 16px 17px; }
+    .metric::before { content: ""; position: absolute; top: 15px; left: 0; width: 2px; height: 30px; border-radius: 2px; background: #42617d; }
+    .metric.alert-metric::before { background: var(--cyan); }
+    .metric.approval-metric::before { background: var(--amber); }
     .metric-label { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12px; }
     .metric-value { margin-top: 14px; color: #fff; font-size: 28px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-    .metric-note { margin-top: 4px; color: #8293aa; font-size: 11px; }
+    .metric-note { margin-top: 4px; color: #a2b1c3; font-size: 10px; line-height: 1.4; }
     .layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(290px, .75fr); gap: 18px; align-items: start; }
     .column { display: grid; gap: 18px; min-width: 0; }
     .panel { overflow: hidden; }
@@ -67,6 +106,29 @@
     .panel-title { display: flex; align-items: center; gap: 9px; margin: 0; color: #f3f7fd; font-size: 14px; font-weight: 650; }
     .panel-title .accent { width: 7px; height: 7px; border-radius: 2px; background: var(--cyan); }
     .panel-body { padding: 18px; }
+    .topology-map { display: grid; gap: 13px; }
+    .topology-group { position: relative; padding-left: 17px; }
+    .topology-group::before { content: ""; position: absolute; top: 26px; bottom: 12px; left: 5px; width: 1px; background: linear-gradient(#327c8d, #2b3c50); }
+    .topology-switch { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 11px; border: 1px solid #2a5366; border-radius: 9px; background: #10232e; }
+    .topology-switch::before { content: ""; position: absolute; top: 50%; left: -13px; width: 12px; height: 1px; background: #327c8d; }
+    .switch-identity { min-width: 0; }
+    .switch-name { color: #e8f3fa; font-size: 11px; font-weight: 700; overflow-wrap: anywhere; }
+    .switch-meta { margin-top: 4px; color: #96aabd; font: 9px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .switch-count { flex: 0 0 auto; color: #8bdde7; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .topology-hosts { display: grid; gap: 5px; margin: 6px 0 0 10px; }
+    .topology-host { position: relative; display: grid; grid-template-columns: 7px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid #243549; border-radius: 7px; background: #0d1724; }
+    .topology-host::before { content: ""; position: absolute; top: 50%; left: -12px; width: 11px; height: 1px; background: #34495e; }
+    .topology-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px #63d3a055; }
+    .topology-host.isolated .topology-dot { background: var(--red); box-shadow: 0 0 8px #fb8e9555; }
+    .topology-host.pending .topology-dot { background: var(--amber); box-shadow: 0 0 8px #f1c77855; }
+    .topology-ip { color: #d5e0eb; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .topology-port { color: #94a6bb; font: 9px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .topology-legend { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 14px; padding-top: 11px; border-top: 1px solid #223147; color: #a5b4c5; font-size: 9px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    .legend-dot.isolated { background: var(--red); }
+    .legend-dot.pending { background: var(--amber); }
+    .topology-disclaimer { margin: 10px 0 0; color: #8597ac; font-size: 9px; line-height: 1.5; }
     .device-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .device-card { padding: 15px; animation: appear .24s ease both; }
     .device-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -127,10 +189,9 @@
     footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); color: #8293aa; font-size: 11px; }
     @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes shimmer { to { background-position: -200% 0; } }
-    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
-    @media (max-width: 720px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .device-list { grid-template-columns: 1fr; } .clock { display: none; } .topbar { align-items: flex-start; } .top-actions { flex-wrap: wrap; justify-content: flex-end; } }
-    @media (max-width: 760px) { .intro { align-items: flex-start; flex-direction: column; } .intro-actions { justify-content: flex-start; } }
-    @media (max-width: 460px) { .shell { padding-top: 18px; } .brand-subtitle { max-width: 175px; line-height: 1.4; } .topbar { gap: 8px; } .top-actions { gap: 7px; } .mode-pill { padding: 0 9px; } .intro { display: block; } .intro-actions { margin-top: 14px; } .mode-select { max-width: 100%; } .metrics { gap: 9px; } .metric { min-height: 106px; padding: 13px; } .metric-value { font-size: 24px; } footer { flex-direction: column; } }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } .intro { grid-template-columns: 1fr; gap: 20px; } .hero-side { grid-template-columns: 1fr 1.35fr; align-items: stretch; } }
+    @media (max-width: 720px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .device-list { grid-template-columns: 1fr; } .clock { display: none; } .topbar { align-items: flex-start; } .top-actions { flex-wrap: wrap; justify-content: flex-end; } .hero-side { grid-template-columns: 1fr; } .workflow-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .workflow-step::after { display: none; } }
+    @media (max-width: 460px) { .shell { padding-top: 18px; } .brand-subtitle { max-width: 175px; line-height: 1.4; } .topbar { gap: 8px; } .top-actions { gap: 7px; } .mode-pill { padding: 0 9px; } .intro { margin-top: 18px; padding: 20px 16px; } h1 { font-size: 32px; } .demo-console { padding: 13px; } .demo-controls { grid-template-columns: 1fr; } .demo-controls .button { width: 100%; } .demo-settings { grid-template-columns: 1fr; gap: 6px; } .quick-scenarios { display: grid; grid-template-columns: 1fr; } .quick-scenarios .button { justify-content: flex-start; } .workflow { padding: 14px 12px; } .workflow-steps { gap: 7px; } .workflow-step { grid-template-columns: 24px 1fr; gap: 6px; padding: 8px 6px; } .workflow-number { width: 23px; height: 23px; } .workflow-label { font-size: 10px; } .metrics { gap: 9px; } .metric { min-height: 106px; padding: 13px; } .metric-value { font-size: 24px; } footer { flex-direction: column; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
   </style>
 </head>
@@ -155,29 +216,69 @@
 
     <main>
       <section class="intro" aria-labelledby="page-title">
-        <div>
-          <div class="eyebrow">Lab operations dashboard</div>
-          <h1 id="page-title">Containment overview</h1>
-          <p>Inventory, test alerts and verified port state for your configured GNS3 lab.</p>
+        <div class="hero-copy">
+          <div class="hero-kicker">Network threat response center</div>
+          <h1 id="page-title">See the response.<br>Trust the outcome.</h1>
+          <p>Follow a network alert from host discovery to human approval and verified containment—built for a controlled GNS3 lab.</p>
+          <div class="hero-proof" aria-label="Response capabilities">
+            <span class="proof-chip"><strong>01</strong> Discover</span>
+            <span class="proof-chip"><strong>02</strong> Approve</span>
+            <span class="proof-chip"><strong>03</strong> Contain</span>
+            <span class="proof-chip"><strong>04</strong> Verify</span>
+          </div>
         </div>
-        <div class="intro-actions" aria-label="MOCK feature demonstrations">
-          <label class="subtle" for="containment-mode">Containment</label>
-          <select class="mode-select" id="containment-mode">
-            <option value="vlan">VLAN Quarantine + Port Bounce</option>
-            <option value="acl">Surgical ACL Block</option>
-          </select>
-          <button class="button primary" type="button" id="test-alert-button">Simulate Attack</button>
-          <button class="button" type="button" id="unknown-host-button">Test Unknown Host (Auto-Discover)</button>
-          <button class="button" type="button" id="critical-alert-button">Test Critical Server Alert</button>
+        <div class="hero-side">
+          <div class="demo-mode-note" id="demo-mode-note" role="note">
+            <span aria-hidden="true">●</span>
+            <div><strong>MOCK LAB · SIMULATION ONLY</strong>Demonstration actions use simulated device responses and do not change a real switch.</div>
+          </div>
+          <div class="demo-console" aria-labelledby="guided-demo-title">
+            <div class="demo-console-head">
+              <div>
+                <h2 class="demo-console-title" id="guided-demo-title">Guided response demo</h2>
+                <p class="demo-console-copy" id="guided-demo-copy">A short, presenter-friendly walkthrough. One step at a time.</p>
+              </div>
+              <span class="demo-step-count" id="guided-demo-count">STEP 01 / 04</span>
+            </div>
+            <div class="demo-controls">
+              <button class="button primary large" type="button" id="guided-demo-button">Start guided demo</button>
+              <button class="button secondary" type="button" id="restart-demo-button" title="Restart the guided walkthrough">Restart</button>
+            </div>
+            <div class="demo-settings">
+              <label for="containment-mode">Response method</label>
+              <select class="mode-select" id="containment-mode">
+                <option value="vlan">VLAN quarantine + port bounce</option>
+                <option value="acl">Surgical ACL block</option>
+              </select>
+            </div>
+            <div class="quick-scenarios" aria-label="Quick demonstration scenarios">
+              <button class="button" type="button" id="test-alert-button">Quick test alert</button>
+              <button class="button" type="button" id="unknown-host-button">Unknown host</button>
+              <button class="button" type="button" id="critical-alert-button">Critical server</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="workflow" aria-labelledby="workflow-title" aria-live="polite">
+        <div class="workflow-head">
+          <h2 class="workflow-title" id="workflow-title">Guided response path</h2>
+          <span class="workflow-caption" id="workflow-caption">Illustrative workflow · progress updates as you run the demo</span>
+        </div>
+        <div class="workflow-steps" id="workflow-steps">
+          <div class="workflow-step" data-step="0"><span class="workflow-number">01</span><div><span class="workflow-label">Discover host</span><span class="workflow-status">Ready</span></div></div>
+          <div class="workflow-step" data-step="1"><span class="workflow-number">02</span><div><span class="workflow-label">Raise critical alert</span><span class="workflow-status">Up next</span></div></div>
+          <div class="workflow-step" data-step="2"><span class="workflow-number">03</span><div><span class="workflow-label">Human approval</span><span class="workflow-status">Up next</span></div></div>
+          <div class="workflow-step" data-step="3"><span class="workflow-number">04</span><div><span class="workflow-label">Contain &amp; verify</span><span class="workflow-status">Up next</span></div></div>
         </div>
       </section>
 
       <section class="metrics" aria-label="System summary" aria-live="polite">
-        <article class="metric"><div class="metric-label">Recorded alerts <span aria-hidden="true">↗</span></div><div class="metric-value" id="metric-alerts">—</div><div class="metric-note">Containment tickets</div></article>
-        <article class="metric"><div class="metric-label">Isolated ports <span aria-hidden="true">◇</span></div><div class="metric-value" id="metric-isolated">—</div><div class="metric-note">Requires verified restore</div></article>
-        <article class="metric"><div class="metric-label">Pending approvals <span aria-hidden="true">!</span></div><div class="metric-value" id="metric-approvals">—</div><div class="metric-note">Critical assets awaiting review</div></article>
-        <article class="metric"><div class="metric-label">SPAN sessions <span aria-hidden="true">⌁</span></div><div class="metric-value" id="metric-span">—</div><div class="metric-note">Explicitly configured sessions</div></article>
-        <article class="metric"><div class="metric-label">Switches in inventory <span aria-hidden="true">▦</span></div><div class="metric-value" id="metric-switches">—</div><div class="metric-note">MOCK or allowlisted lab devices</div></article>
+        <article class="metric alert-metric"><div class="metric-label">Recorded alerts <span aria-hidden="true">↗</span></div><div class="metric-value" id="metric-alerts">—</div><div class="metric-note">Tickets saved in this lab database</div></article>
+        <article class="metric"><div class="metric-label">Isolated ports <span aria-hidden="true">◇</span></div><div class="metric-value" id="metric-isolated">—</div><div class="metric-note">Containment requires verified restore</div></article>
+        <article class="metric approval-metric"><div class="metric-label">Pending approvals <span aria-hidden="true">!</span></div><div class="metric-value" id="metric-approvals">—</div><div class="metric-note">Critical assets awaiting a decision</div></article>
+        <article class="metric"><div class="metric-label">SPAN sessions <span aria-hidden="true">⌁</span></div><div class="metric-value" id="metric-span">—</div><div class="metric-note">Sessions currently recorded active</div></article>
+        <article class="metric"><div class="metric-label">Switches in inventory <span aria-hidden="true">▦</span></div><div class="metric-value" id="metric-switches">—</div><div class="metric-note">Distinct switches represented</div></article>
       </section>
 
       <div class="layout">
@@ -205,6 +306,21 @@
         </div>
 
         <aside class="column">
+          <section class="panel" aria-labelledby="topology-title">
+            <div class="panel-header">
+              <h2 class="panel-title" id="topology-title"><span class="accent"></span>Lab topology</h2>
+              <span class="subtle" id="topology-count">Inventory view</span>
+            </div>
+            <div class="panel-body">
+              <div id="topology-map" class="topology-map"><div class="loading">Mapping inventory…</div></div>
+              <div class="topology-legend" aria-label="Host status legend">
+                <span class="legend-item"><span class="legend-dot"></span>Secure</span>
+                <span class="legend-item"><span class="legend-dot pending"></span>Approval pending</span>
+                <span class="legend-item"><span class="legend-dot isolated"></span>Isolated</span>
+              </div>
+              <p class="topology-disclaimer" id="topology-disclaimer">Inventory topology · not a real-time network map.</p>
+            </div>
+          </section>
           <section class="panel" aria-labelledby="last-operation-title">
             <div class="panel-header"><h2 class="panel-title" id="last-operation-title"><span class="accent"></span>Last operation</h2></div>
             <div class="panel-body" id="last-operation"><div class="loading">Waiting for system status…</div></div>
@@ -216,7 +332,7 @@
           <section class="panel">
             <div class="panel-header"><h2 class="panel-title"><span class="accent"></span>Live safety</h2></div>
             <div class="panel-body">
-              <p class="operation-message">LIVE is selected only at startup with local lab configuration. Each network change also requires a live-change token and an explicit confirmation. Simulation is MOCK-only.</p>
+              <p class="operation-message" id="safety-message">LIVE is selected only at startup with local lab configuration. Each network change also requires a live-change token and an explicit confirmation. Simulation is MOCK-only.</p>
             </div>
           </section>
         </aside>
@@ -246,7 +362,15 @@
 
   <script>
     "use strict";
-    const state = { mode: "MOCK", inventory: [], tickets: [], busy: false, pending: null };
+    const state = {
+      mode: "MOCK",
+      inventory: [],
+      tickets: [],
+      busy: false,
+      pending: null,
+      demoStep: Math.min(3, Math.max(0, Number(localStorage.getItem("sentrix-demo-step")) || 0)),
+      lastOperation: null
+    };
     const byId = (id) => document.getElementById(id);
     const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -267,6 +391,114 @@
       if (status === "ERROR_REQUIRES_REVIEW") return '<span class="badge review">Needs review</span>';
       if (status === "ISOLATING" || status === "RESTORING") return '<span class="badge review">In progress</span>';
       return '<span class="badge secure">Secure</span>';
+    }
+
+    function setDemoStep(step) {
+      state.demoStep = Math.min(3, Math.max(0, step));
+      localStorage.setItem("sentrix-demo-step", String(state.demoStep));
+      renderGuidedDemo();
+    }
+
+    function renderGuidedDemo() {
+      const step = state.demoStep;
+      const button = byId("guided-demo-button");
+      const labels = [
+        "Start guided demo",
+        "Continue · critical alert",
+        "Check approval status",
+        "View response results"
+      ];
+      const copy = [
+        "Step 1: discover an unknown endpoint, then contain it in simulation.",
+        "Step 2: raise a critical-server alert and route it for human review.",
+        "Step 3: approve or reject the request from the Production File Server card.",
+        "Walkthrough complete. Review the saved response ticket and CLI trace below."
+      ];
+      button.textContent = labels[step];
+      button.disabled = state.mode !== "MOCK" || state.busy;
+      byId("guided-demo-copy").textContent = copy[step];
+      byId("guided-demo-count").textContent = `STEP ${String(step + 1).padStart(2, "0")} / 04`;
+      const pendingHost = state.inventory.find((item) => item.host_ip === "192.168.10.100");
+      const rejected = state.lastOperation?.action === "approval_rejected"
+        && state.lastOperation?.host_ip === "192.168.10.100";
+      const expired = state.lastOperation?.action === "approval_expired"
+        && state.lastOperation?.host_ip === "192.168.10.100";
+      const criticalHostIsolated = pendingHost?.port_status === "ISOLATED";
+      const statuses = step === 0
+        ? ["Ready", "Up next", "Up next", "Up next"]
+        : step === 1
+          ? ["Discovery complete", "Ready", "Up next", "Up next"]
+          : step === 2
+            ? ["Discovery complete", "Alert queued", "Awaiting decision", "Up next"]
+            : ["Discovery complete", "Alert raised", rejected ? "Rejected · host secure" : expired ? "Expired · host secure" : "Approval resolved", rejected || expired ? "No isolation performed" : criticalHostIsolated ? "Containment verified" : "Host currently secure"];
+      const completed = step === 0 ? [] : step === 1 ? [0] : step === 2 ? [0, 1] : [0, 1, 2, 3];
+      document.querySelectorAll(".workflow-step").forEach((item, index) => {
+        item.classList.toggle("done", completed.includes(index));
+        item.classList.toggle("active", index === step && step < 3);
+        const status = item.querySelector(".workflow-status");
+        status.textContent = statuses[index] || "Up next";
+      });
+      if (step === 2 && pendingHost?.port_status === "PENDING_APPROVAL") {
+        byId("guided-demo-copy").textContent = "Approval is waiting. Use Approve or Reject on the Production File Server inventory card.";
+      }
+      if (step === 3 && rejected) {
+        byId("guided-demo-copy").textContent = "The alert was rejected. The host remains secure; review the decision in Recent alerts.";
+      } else if (step === 3 && expired) {
+        byId("guided-demo-copy").textContent = "The approval request expired without action. The host remains secure; submit a new alert to retry.";
+      } else if (step === 3 && !criticalHostIsolated) {
+        byId("guided-demo-copy").textContent = "The approval is resolved and the host is currently secure. Review its final status in the inventory.";
+      }
+      byId("workflow-caption").textContent = state.mode === "MOCK"
+        ? "Guided walkthrough progress · simulated device responses"
+        : "Illustrative workflow · live state is not inferred as a step-by-step event log";
+    }
+
+    function syncDemoProgress() {
+      if (state.demoStep !== 2) return;
+      const criticalHost = state.inventory.find((item) => item.host_ip === "192.168.10.100");
+      if (criticalHost && criticalHost.port_status !== "PENDING_APPROVAL") {
+        state.demoStep = 3;
+        localStorage.setItem("sentrix-demo-step", "3");
+      }
+    }
+
+    function renderTopology() {
+      const container = byId("topology-map");
+      if (!state.inventory.length) {
+        container.innerHTML = '<div class="empty">No inventory endpoints to map.</div>';
+        byId("topology-count").textContent = "0 endpoints";
+        return;
+      }
+      const groups = new Map();
+      state.inventory.forEach((host) => {
+        const key = `${host.switch_hostname}|${host.switch_ip}|${host.switch_vendor}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(host);
+      });
+      byId("topology-count").textContent = `${state.inventory.length} endpoints · ${groups.size} switches`;
+      container.innerHTML = Array.from(groups.entries()).map(([key, hosts]) => {
+        const [hostname, address, vendor] = key.split("|");
+        const hostRows = hosts.map((host) => {
+          const tone = host.port_status === "ISOLATED"
+            ? "isolated"
+            : host.port_status === "PENDING_APPROVAL" ? "pending" : "";
+          const label = host.port_status === "ISOLATED"
+            ? "Isolated"
+            : host.port_status === "PENDING_APPROVAL" ? "Approval pending" : "Secure";
+          return `<div class="topology-host ${tone}" title="${escapeHtml(host.port_role)} · ${escapeHtml(label)}">
+            <span class="topology-dot" aria-hidden="true"></span>
+            <span class="topology-ip">${escapeHtml(host.host_ip)} · ${escapeHtml(label)}</span>
+            <span class="topology-port">${escapeHtml(host.port_interface)}</span>
+          </div>`;
+        }).join("");
+        return `<div class="topology-group">
+          <div class="topology-switch"><div class="switch-identity"><div class="switch-name">${escapeHtml(hostname)}</div><div class="switch-meta">${escapeHtml(address)} · ${escapeHtml(vendor)}</div></div><span class="switch-count">${hosts.length} HOST${hosts.length === 1 ? "" : "S"}</span></div>
+          <div class="topology-hosts">${hostRows}</div>
+        </div>`;
+      }).join("");
+      byId("topology-disclaimer").textContent = state.mode === "MOCK"
+        ? "Inventory topology · simulated statuses · not live network telemetry."
+        : "Inventory topology only · status comes from SENTRIX records, not continuous switch telemetry.";
     }
 
     function renderInventory() {
@@ -365,8 +597,13 @@
       state.mode = data.metrics.engine_mode;
       state.inventory = data.inventory;
       state.tickets = data.tickets;
+      state.lastOperation = data.last_operation;
+      syncDemoProgress();
       byId("mode-label").textContent = state.mode;
       byId("mode-pill").classList.toggle("live", state.mode === "LIVE");
+      byId("demo-mode-note").innerHTML = state.mode === "MOCK"
+        ? '<span aria-hidden="true">●</span><div><strong>MOCK LAB · SIMULATION ONLY</strong>Demonstration actions use simulated device responses and do not change a real switch.</div>'
+        : '<span aria-hidden="true">●</span><div><strong>LIVE LAB · AUTHORIZED SCOPE ONLY</strong>Actions may change allowlisted lab devices and require explicit authorization.</div>';
       byId("test-alert-button").hidden = state.mode !== "MOCK";
       byId("unknown-host-button").hidden = state.mode !== "MOCK";
       byId("critical-alert-button").hidden = state.mode !== "MOCK";
@@ -376,9 +613,14 @@
       byId("metric-span").textContent = data.metrics.active_span_sessions;
       byId("metric-switches").textContent = data.metrics.monitored_switches;
       byId("metric-span").title = `Average operation execution time: ${Number(data.metrics.average_execution_time_ms).toFixed(1)} ms`;
+      byId("safety-message").textContent = state.mode === "MOCK"
+        ? "MOCK mode uses simulated switch responses. No network device configuration is changed. Live operations are disabled for this demo session."
+        : "LIVE mode can change allowlisted lab devices. Verify the target, require a trusted environment, and use the explicit confirmation and authorization tokens.";
       renderInventory();
+      renderTopology();
       renderTickets();
       renderLastOperation(data.last_operation);
+      renderGuidedDemo();
     }
 
     async function request(url, options = {}) {
@@ -402,7 +644,7 @@
     }
 
     async function runTest(ip) {
-      if (state.busy) return;
+      if (state.busy) return false;
       setBusy(true);
       try {
         await request("/api/simulate/attack", {
@@ -418,11 +660,71 @@
             ? "Unknown host discovered and the MOCK alert was processed."
             : "MOCK test alert processed successfully.");
         await refresh();
+        return true;
       } catch (error) {
         showToast(error.message);
+        return false;
       } finally {
         setBusy(false);
       }
+    }
+
+    async function runGuidedDemo() {
+      if (state.busy) return;
+      if (state.mode !== "MOCK") {
+        showToast("Guided demo scenarios are available in MOCK mode only.");
+        return;
+      }
+      if (state.demoStep === 0) {
+        const usedPorts = new Set(state.inventory.map((host) => host.port_interface));
+        const usedIps = new Set(state.inventory.map((host) => host.host_ip));
+        let discoveryIp = "";
+        for (let octet = 101; octet <= 254; octet += 1) {
+          if (!usedIps.has(`192.168.10.${octet}`) && !usedPorts.has(`Gi0/${octet}`)) {
+            discoveryIp = `192.168.10.${octet}`;
+            break;
+          }
+        }
+        if (!discoveryIp) {
+          showToast("No free MOCK discovery address and port are available. Restore or remove a demo host first.");
+          return;
+        }
+        if (await runTest(discoveryIp)) setDemoStep(1);
+        return;
+      }
+      if (state.demoStep === 1) {
+        const criticalHost = state.inventory.find((host) => host.host_ip === "192.168.10.100");
+        if (!criticalHost) {
+          showToast("The Production File Server is missing from inventory.");
+          return;
+        }
+        if (criticalHost.port_status === "PENDING_APPROVAL") {
+          setDemoStep(2);
+          showToast("Critical alert is already awaiting approval. Review its inventory card.");
+          return;
+        }
+        if (criticalHost.port_status !== "SECURE") {
+          showToast("Restore the Production File Server to SECURE before raising the demo alert.");
+          return;
+        }
+        if (await runTest("192.168.10.100")) setDemoStep(2);
+        return;
+      }
+      if (state.demoStep === 2) {
+        await refresh();
+        const criticalHost = state.inventory.find((host) => host.host_ip === "192.168.10.100");
+        if (criticalHost?.port_status === "PENDING_APPROVAL") {
+          document.querySelector(`[data-ip="192.168.10.100"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+          showToast("Use Approve or Reject on the Production File Server inventory card.");
+        } else {
+          syncDemoProgress();
+          renderGuidedDemo();
+          if (state.demoStep === 3) showToast("Review the completed response in ticket history.");
+        }
+        return;
+      }
+      byId("ticket-list").scrollIntoView({ behavior: "smooth", block: "center" });
+      showToast("Guided walkthrough complete. Ticket details include the executed CLI trace.");
     }
 
     function askForChange(action, ip) {
@@ -520,9 +822,10 @@
 
     function setBusy(busy) {
       state.busy = busy;
-      document.querySelectorAll(".intro-actions button, .intro-actions select").forEach((button) => { button.disabled = busy; });
+      document.querySelectorAll(".demo-console button, .demo-console select").forEach((button) => { button.disabled = busy; });
       byId("refresh-button").disabled = busy;
       document.querySelectorAll(".device-card button").forEach((button) => { button.disabled = busy; });
+      if (!busy) renderGuidedDemo();
     }
 
     byId("change-form").addEventListener("submit", (event) => {
@@ -552,6 +855,11 @@
       byId("approval-token").value = "";
     });
 
+    byId("guided-demo-button").addEventListener("click", runGuidedDemo);
+    byId("restart-demo-button").addEventListener("click", () => {
+      setDemoStep(0);
+      showToast("Guided walkthrough restarted. Existing tickets and inventory were not changed.");
+    });
     byId("test-alert-button").addEventListener("click", () => runTest());
     byId("unknown-host-button").addEventListener("click", () => runTest("192.168.10.77"));
     byId("critical-alert-button").addEventListener("click", () => runTest("192.168.10.100"));

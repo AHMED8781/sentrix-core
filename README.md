@@ -28,7 +28,7 @@ $env:SENTRIX_MODE = "MOCK"
 python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-Open <http://127.0.0.1:8000>. MOCK is the default if `SENTRIX_MODE` is omitted. Use **Run MOCK test alert** to create a test ticket and exercise the simulated containment/restore path. `/api/simulate/attack` is disabled in LIVE.
+Open <http://127.0.0.1:8000>. MOCK is the default if `SENTRIX_MODE` is omitted. Use **Start guided demo** to step through simulated unknown-host discovery, a critical-server alert, human approval, and the final ticket/CLI trace. Approval is an explicit action on the Production File Server inventory card. **Restart** resets only the browser's walkthrough progress; it does not clear tickets, restore ports, or reset the database. The topology panel summarizes inventory and stored status, not live network telemetry. `/api/simulate/attack` is disabled in LIVE.
 
 The local database defaults to `sentrix.db` beside `database.py`. Set `SENTRIX_DB_PATH` to an absolute path or a path relative to the project directory to use another SQLite file. The database, WAL files, and local configuration are ignored by Git.
 
