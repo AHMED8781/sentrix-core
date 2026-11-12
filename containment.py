@@ -1,6 +1,7 @@
 """Fail-closed MOCK/LIVE containment for explicitly configured lab switches."""
 
 import hmac
+import httpx
 import ipaddress
 import json
 import logging
@@ -16,6 +17,95 @@ LOGGER = logging.getLogger("sentrix.containment")
 CONFIRMATION_VALUE = "I_CONFIRM_GNS3_LAB_CHANGE"
 SUPPORTED_VENDORS = {"cisco_ios", "arista_eos"}
 ISOLATION_DESCRIPTION = "SENTRIX_ISOLATED"
+_TELEGRAM_RUNTIME_CONFIG: Dict[str, Optional[str]] = {
+    "token": None,
+    "chat_id": None,
+}
+
+
+def get_telegram_config() -> Dict[str, str]:
+    token = _TELEGRAM_RUNTIME_CONFIG["token"]
+    chat_id = _TELEGRAM_RUNTIME_CONFIG["chat_id"]
+    return {
+        "token": token if token is not None else os.getenv("TELEGRAM_BOT_TOKEN", ""),
+        "chat_id": chat_id if chat_id is not None else os.getenv("TELEGRAM_CHAT_ID", ""),
+    }
+
+
+def update_telegram_config(
+    token: Optional[str] = None,
+    chat_id: Optional[str] = None,
+    update_token: bool = False,
+    update_chat_id: bool = False,
+) -> Dict[str, bool]:
+    if update_token:
+        _TELEGRAM_RUNTIME_CONFIG["token"] = token or ""
+    if update_chat_id:
+        _TELEGRAM_RUNTIME_CONFIG["chat_id"] = chat_id or ""
+    config = get_telegram_config()
+    return {
+        "configured": bool(config["token"] and config["chat_id"]),
+        "token_configured": bool(config["token"]),
+        "chat_id_configured": bool(config["chat_id"]),
+    }
+
+
+def send_telegram_approval(payload: Dict[str, Any]) -> bool:
+    config = get_telegram_config()
+    if not config["token"] or not config["chat_id"]:
+        return False
+    hunt = payload.get("approval_hunt", {})
+    port_type = hunt.get("port_type", "unknown")
+    port_mode = (
+        "Trunk"
+        if port_type == "trunk"
+        else "Access (multi-MAC)"
+        if port_type == "multi-mac"
+        else "Access"
+    )
+    text = (
+        "🚨 SENTRIX critical asset approval required\n"
+        f"Alert ID: {payload['approval_id']}\n"
+        f"Asset: {payload.get('asset_name', 'Critical asset')}\n"
+        f"Compromised IP: {payload['attacker_ip']}\n"
+        f"Switch / port: {hunt.get('switch_hostname', 'Unknown')} / "
+        f"{hunt.get('port', 'Unknown')}\n"
+        f"Port mode: {port_mode}\n"
+        f"Severity: {payload.get('severity', 1)}"
+    )
+    markup = {
+        "inline_keyboard": [[
+            {
+                "text": "🔒 Isolate VLAN",
+                "callback_data": f"approve_vlan:{payload['approval_id']}",
+            },
+            {
+                "text": "🛡️ Surgical ACL Only",
+                "callback_data": f"approve_acl:{payload['approval_id']}",
+            },
+        ], [{
+            "text": "❌ Reject / False Positive",
+            "callback_data": f"reject:{payload['approval_id']}",
+        }]],
+    }
+    try:
+        response = httpx.post(
+            f"https://api.telegram.org/bot{config['token']}/sendMessage",
+            json={
+                "chat_id": config["chat_id"],
+                "text": text,
+                "reply_markup": markup,
+            },
+            timeout=5.0,
+        )
+        response.raise_for_status()
+        return True
+    except httpx.HTTPError as exc:
+        LOGGER.error(
+            "telegram_approval_notification_failed error_type=%s",
+            type(exc).__name__,
+        )
+        return False
 
 
 class ConfigurationError(ValueError):
@@ -260,6 +350,11 @@ def _normalize_mac(value: str) -> Optional[str]:
     return ":".join(digits[index:index + 2] for index in range(0, 12, 2))
 
 
+def _cisco_mac(value: str) -> str:
+    digits = re.sub(r"[^0-9a-f]", "", value.lower())
+    return ".".join(digits[index:index + 4] for index in range(0, 12, 4))
+
+
 def discover_host_port(target_ip: str) -> Dict[str, Any]:
     """Resolve an endpoint through ARP/MAC tables without enrolling unapproved LIVE ports."""
     address = ipaddress.ip_address(target_ip)
@@ -321,7 +416,7 @@ def discover_host_port(target_ip: str) -> Dict[str, Any]:
         if host_mac is None or str(address) not in arp_output:
             raise AuthorizationError("The target has no unambiguous ARP entry on the primary switch.")
         mac_output = connection.send_command(
-            f"show mac address-table address {host_mac.replace(':', '.')}",
+            f"show mac address-table address {_cisco_mac(host_mac)}",
             read_timeout=primary.timeout,
         )
         matching_lines = [
@@ -362,7 +457,7 @@ def discover_host_port(target_ip: str) -> Dict[str, Any]:
             "current_vlan": allowed.restore_vlan,
             "discovery_cli": (
                 f"show ip arp {address}\n{arp_output}\n"
-                f"show mac address-table address {host_mac.replace(':', '.')}\n{mac_output}\n"
+                f"show mac address-table address {_cisco_mac(host_mac)}\n{mac_output}\n"
                 f"show cdp neighbors {port_interface}\n{cdp_output or 'No CDP neighbor found.'}"
             ),
         }
@@ -375,6 +470,351 @@ def discover_host_port(target_ip: str) -> Dict[str, Any]:
                     "host_discovery_disconnect_failed vendor=%s error_type=%s",
                     device.vendor, type(exc).__name__,
                 )
+
+
+def _switchport_type(output: str) -> str:
+    modes = re.findall(
+        r"(?im)^\s*(?:Administrative|Operational) Mode:\s*(.+?)\s*$",
+        output,
+    )
+    if not modes:
+        raise AuthorizationError("The switchport mode could not be determined.")
+    if any("trunk" in mode.lower() for mode in modes):
+        return "trunk"
+    if any("access" in mode.lower() for mode in modes):
+        return "access"
+    raise AuthorizationError("The switchport is not confirmed as access or trunk.")
+
+
+def _mac_table_interfaces(output: str, host_mac: str) -> str:
+    rows = [line.split() for line in output.splitlines() if line.split()]
+    matching = [tokens for tokens in rows if _normalize_mac(" ".join(tokens)) == host_mac]
+    interfaces = {tokens[-1] for tokens in matching}
+    if len(interfaces) != 1:
+        raise AuthorizationError(
+            "The target MAC does not resolve to exactly one switch port."
+        )
+    return interfaces.pop()
+
+
+def _mac_count_on_interface(output: str, interface: str) -> int:
+    count = sum(
+        1
+        for line in output.splitlines()
+        if line.split()
+        and line.split()[-1].lower() == interface.lower()
+        and _normalize_mac(line) is not None
+    )
+    if count == 0:
+        raise AuthorizationError(
+            "The switch did not return MAC-table entries for the discovered port."
+        )
+    return count
+
+
+def _neighbor_address(output: str) -> Optional[str]:
+    match = re.search(
+        r"(?im)^\s*(?:IP address|Management address|Management Address):\s*"
+        r"((?:\d{1,3}\.){3}\d{1,3})\s*$",
+        output,
+    )
+    if not match:
+        return None
+    try:
+        address = ipaddress.ip_address(match.group(1))
+    except ValueError:
+        return None
+    return str(address) if address.is_private else None
+
+
+def hunt_ip_port(
+    target_ip: str, inventory_record: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """Trace an explicitly scoped lab endpoint to its final switchport."""
+    address = ipaddress.ip_address(target_ip)
+    if address.version != 4 or not address.is_private:
+        raise AuthorizationError("IP-to-port hunting is limited to private IPv4 lab addresses.")
+
+    trace: List[Dict[str, Any]] = []
+    started = time.perf_counter()
+    commands: List[str] = []
+
+    def record_step(
+        step: str,
+        command: str,
+        output: str,
+        execution_time_ms: Optional[float] = None,
+    ) -> None:
+        commands.append(command)
+        trace.append({
+            "step": step,
+            "command": command,
+            "output": output,
+            "execution_time_ms": (
+                execution_time_ms
+                if execution_time_ms is not None
+                else round(random.uniform(0.1, 0.8), 2)
+            ),
+        })
+
+    if get_mock_mode():
+        octet = int(address.packed[-1])
+        host_mac = (
+            _normalize_mac(inventory_record["host_mac"])
+            if inventory_record and inventory_record.get("host_mac")
+            else f"00:50:79:66:68:{octet:02x}"
+        )
+        if host_mac is None:
+            raise AuthorizationError("The inventory MAC address is invalid.")
+        final_switch = {
+            "switch_ip": inventory_record.get("switch_ip", "192.168.1.2")
+            if inventory_record else "192.168.1.2",
+            "switch_hostname": inventory_record.get("switch_hostname", "SW-CORE-CISCO-01")
+            if inventory_record else "SW-CORE-CISCO-01",
+            "switch_vendor": inventory_record.get("switch_vendor", "cisco_ios")
+            if inventory_record else "cisco_ios",
+            "port_interface": inventory_record.get("port_interface", f"Gi0/{octet}")
+            if inventory_record else f"Gi0/{octet}",
+        }
+        guarded_uplink = octet % 13 == 0
+        multi_mac = octet % 17 == 0
+        endpoint_trunk = octet % 29 == 0
+        if guarded_uplink:
+            root_ip = "192.168.1.10"
+            root_name = "SW-AGG-CISCO-01"
+            root_port = "Gi0/1"
+            record_step(
+                "arp_lookup", f"show ip arp {address}",
+                f"Internet {address} 0 {_cisco_mac(host_mac)} ARPA Vlan10",
+            )
+            record_step(
+                "mac_table", f"show mac address-table address {_cisco_mac(host_mac)}",
+                f"10 {_cisco_mac(host_mac)} DYNAMIC {root_port}",
+            )
+            record_step(
+                "switchport_mode", f"show interfaces {root_port} switchport",
+                "Administrative Mode: trunk\nOperational Mode: trunk",
+            )
+            record_step(
+                "cdp_neighbor", f"show cdp neighbors {root_port} detail",
+                f"Device ID: {final_switch['switch_hostname']}\n"
+                f"IP address: {final_switch['switch_ip']}",
+            )
+            edge_command = f"show mac address-table address {_cisco_mac(host_mac)}"
+            edge_output = (
+                f"10 {_cisco_mac(host_mac)} DYNAMIC {final_switch['port_interface']}"
+            )
+            if multi_mac:
+                edge_output += (
+                    f"\n10 00aa.bbcc.{octet:04x} DYNAMIC {final_switch['port_interface']}"
+                )
+            record_step("neighbor_mac_table", edge_command, edge_output)
+            interface_mac_output = edge_output
+            record_step(
+                "edge_port_mac_table",
+                f"show mac address-table interface {final_switch['port_interface']}",
+                interface_mac_output,
+            )
+            multi_mac = _mac_count_on_interface(
+                interface_mac_output, final_switch["port_interface"]
+            ) > 1
+            mode = "trunk" if endpoint_trunk else "access"
+            record_step(
+                "edge_switchport_mode",
+                f"show interfaces {final_switch['port_interface']} switchport",
+                f"Administrative Mode: static {mode}\n"
+                f"Operational Mode: static {mode}",
+            )
+            switch_ip = final_switch["switch_ip"]
+            switch_hostname = final_switch["switch_hostname"]
+            port_interface = final_switch["port_interface"]
+            port_mode = mode
+        else:
+            switch_ip = final_switch["switch_ip"]
+            switch_hostname = final_switch["switch_hostname"]
+            port_interface = final_switch["port_interface"]
+            record_step(
+                "arp_lookup", f"show ip arp {address}",
+                f"Internet {address} 0 {_cisco_mac(host_mac)} ARPA Vlan10",
+            )
+            mac_output = (
+                f"10 {_cisco_mac(host_mac)} DYNAMIC {port_interface}"
+            )
+            if multi_mac:
+                mac_output += f"\n10 00aa.bbcc.{octet:04x} DYNAMIC {port_interface}"
+            record_step(
+                "mac_table", f"show mac address-table address {_cisco_mac(host_mac)}",
+                mac_output,
+            )
+            record_step(
+                "port_mac_table",
+                f"show mac address-table interface {port_interface}",
+                mac_output,
+            )
+            multi_mac = (
+                _mac_count_on_interface(mac_output, port_interface) > 1
+            )
+            port_mode = "trunk" if endpoint_trunk else "access"
+            record_step(
+                "switchport_mode", f"show interfaces {port_interface} switchport",
+                f"Administrative Mode: static {port_mode}\n"
+                f"Operational Mode: static {port_mode}",
+            )
+        guard = port_mode == "trunk" or multi_mac
+        elapsed = round(max(
+            (time.perf_counter() - started) * 1000,
+            sum(step["execution_time_ms"] for step in trace),
+        ), 2)
+        return {
+            "target_ip": str(address),
+            "resolved_mac": host_mac,
+            "switch_ip": switch_ip,
+            "switch_hostname": switch_hostname,
+            "port": port_interface,
+            "port_type": "trunk" if port_mode == "trunk" else (
+                "multi-mac" if multi_mac else "access"
+            ),
+            "trunk_guard_override": guard,
+            "warning": (
+                "⚠️ Trunk Port Detected — Auto-Switched to Surgical ACL to Prevent Uplink Outage"
+                if guard else ""
+            ),
+            "hunt_time_ms": elapsed,
+            "trace": trace,
+            "hunt_cli": commands,
+            "root_switch_ip": root_ip if guarded_uplink else switch_ip,
+            "root_switch_hostname": root_name if guarded_uplink else switch_hostname,
+        }
+
+    devices = load_lab_devices()
+    allowed = devices.get(str(address))
+    if allowed is None:
+        raise AuthorizationError(
+            "LIVE IP-to-port hunting is limited to hosts explicitly listed in the lab allowlist."
+        )
+    if inventory_record is not None:
+        _device_for_host(inventory_record)
+    current = next(iter(devices.values()))
+    visited: set[str] = set()
+    host_mac: Optional[str] = None
+    current_port = ""
+    current_mode = ""
+    final_device = current
+    final_switch_name = f"LAB-{current.switch_ip.replace('.', '-')}"
+
+    def run_on(device: LabDevice, command: str, step: str) -> str:
+        from netmiko import ConnectHandler
+
+        connection = None
+        try:
+            connection = ConnectHandler(
+                device_type=device.vendor,
+                host=device.switch_ip,
+                port=device.port,
+                username=os.environ["SENTRIX_LAB_USERNAME"],
+                password=os.environ["SENTRIX_LAB_PASSWORD"],
+                timeout=device.timeout,
+                conn_timeout=device.timeout,
+                auth_timeout=device.timeout,
+                banner_timeout=device.timeout,
+                fast_cli=False,
+            )
+            command_started = time.perf_counter()
+            output = connection.send_command(command, read_timeout=device.timeout)
+            duration = round((time.perf_counter() - command_started) * 1000, 2)
+            record_step(step, command, output, duration)
+            return output
+        finally:
+            if connection is not None:
+                try:
+                    connection.disconnect()
+                except Exception as exc:
+                    LOGGER.warning(
+                        "ip_hunt_disconnect_failed vendor=%s error_type=%s",
+                        device.vendor, type(exc).__name__,
+                    )
+
+    arp_output = run_on(current, f"show ip arp {address}", "arp_lookup")
+    host_mac = _normalize_mac(arp_output)
+    if host_mac is None or str(address) not in arp_output:
+        raise AuthorizationError("The target has no unambiguous ARP entry on the configured switch.")
+    known_switches = {
+        device.switch_ip: device for device in devices.values()
+    }
+
+    for hop in range(min(len(known_switches) + 1, 5)):
+        if current.switch_ip in visited:
+            raise AuthorizationError("The IP-to-port trace encountered a switch loop.")
+        visited.add(current.switch_ip)
+        mac_command = f"show mac address-table address {_cisco_mac(host_mac)}"
+        mac_output = run_on(current, mac_command, "mac_table")
+        try:
+            current_port = _mac_table_interfaces(mac_output, host_mac)
+            _validate_interface(current.vendor, current_port, "discovered interface")
+        except ValueError as exc:
+            raise AuthorizationError(str(exc)) from exc
+        port_command = f"show interfaces {current_port} switchport"
+        switchport_output = run_on(current, port_command, "switchport_mode")
+        current_mode = _switchport_type(switchport_output)
+        multi_mac = False
+        final_device = current
+        final_switch_name = (
+            inventory_record["switch_hostname"]
+            if inventory_record and current.switch_ip == inventory_record["switch_ip"]
+            else f"LAB-{current.switch_ip.replace('.', '-')}"
+        )
+        if current_mode != "trunk":
+            port_mac_command = f"show mac address-table interface {current_port}"
+            port_mac_output = run_on(current, port_mac_command, "port_mac_table")
+            multi_mac = _mac_count_on_interface(
+                port_mac_output, current_port
+            ) > 1
+            break
+        cdp_command = f"show cdp neighbors {current_port} detail"
+        neighbor_output = run_on(current, cdp_command, "cdp_neighbor")
+        neighbor_ip = _neighbor_address(neighbor_output)
+        neighbor_name_match = re.search(r"(?im)^\s*Device ID:\s*(.+?)\s*$", neighbor_output)
+        neighbor_name = neighbor_name_match.group(1) if neighbor_name_match else ""
+        if not neighbor_ip:
+            lldp_command = f"show lldp neighbors {current_port} detail"
+            neighbor_output = run_on(current, lldp_command, "lldp_neighbor")
+            neighbor_ip = _neighbor_address(neighbor_output)
+            neighbor_name_match = re.search(r"(?im)^\s*System Name:\s*(.+?)\s*$", neighbor_output)
+            neighbor_name = neighbor_name_match.group(1) if neighbor_name_match else neighbor_name
+        next_device = known_switches.get(neighbor_ip or "")
+        if next_device is None:
+            break
+        current = next_device
+        final_switch_name = neighbor_name or f"LAB-{current.switch_ip.replace('.', '-')}"
+
+    if inventory_record is not None and (
+        final_device.switch_ip != inventory_record["switch_ip"]
+        or current_port != inventory_record["port_interface"]
+    ):
+        raise AuthorizationError(
+            "The traced endpoint does not match its explicitly inventoried switch and port."
+        )
+    guard = current_mode == "trunk" or multi_mac
+    elapsed = round((time.perf_counter() - started) * 1000, 2)
+    return {
+        "target_ip": str(address),
+        "resolved_mac": host_mac,
+        "switch_ip": final_device.switch_ip,
+        "switch_hostname": final_switch_name,
+        "port": current_port,
+        "port_type": "trunk" if current_mode == "trunk" else (
+            "multi-mac" if multi_mac else "access"
+        ),
+        "trunk_guard_override": guard,
+        "warning": (
+            "⚠️ Trunk Port Detected — Auto-Switched to Surgical ACL to Prevent Uplink Outage"
+            if guard else ""
+        ),
+        "hunt_time_ms": elapsed,
+        "trace": trace,
+        "hunt_cli": commands,
+        "root_switch_ip": next(iter(devices.values())).switch_ip,
+    }
 
 
 def _span_commands(vendor: str, session: int, source: str, destination: str) -> List[str]:

@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import sqlite3
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -60,7 +61,18 @@ CREATE TABLE IF NOT EXISTS incident_tickets (
     span_destination TEXT NOT NULL DEFAULT '',
     execution_time_ms REAL NOT NULL DEFAULT 0,
     executed_cli TEXT NOT NULL DEFAULT '[]',
-    ticket_status TEXT NOT NULL DEFAULT 'CONTAINED'
+    ticket_status TEXT NOT NULL DEFAULT 'CONTAINED',
+    resolved_mac TEXT NOT NULL DEFAULT '',
+    discovered_switch TEXT NOT NULL DEFAULT '',
+    discovered_port TEXT NOT NULL DEFAULT '',
+    port_type TEXT NOT NULL DEFAULT '',
+    hunt_trace_json TEXT NOT NULL DEFAULT '[]',
+    hunt_time_ms REAL NOT NULL DEFAULT 0,
+    trunk_guard_warning TEXT NOT NULL DEFAULT '',
+    containment_mode TEXT NOT NULL DEFAULT 'vlan',
+    approval_channel TEXT NOT NULL DEFAULT '',
+    approved_action TEXT NOT NULL DEFAULT '',
+    approval_response_ms REAL NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS operation_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,7 +82,11 @@ CREATE TABLE IF NOT EXISTS operation_log (
     result TEXT NOT NULL,
     message TEXT NOT NULL,
     execution_time_ms REAL NOT NULL DEFAULT 0,
-    steps_json TEXT NOT NULL DEFAULT '[]'
+    steps_json TEXT NOT NULL DEFAULT '[]',
+    approval_channel TEXT NOT NULL DEFAULT '',
+    approved_action TEXT NOT NULL DEFAULT '',
+    approval_response_ms REAL NOT NULL DEFAULT 0,
+    executed_cli TEXT NOT NULL DEFAULT '[]'
 );
 CREATE TABLE IF NOT EXISTS switch_operation_locks (
     switch_ip TEXT PRIMARY KEY,
@@ -125,6 +141,60 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE incident_tickets ADD COLUMN span_destination TEXT NOT NULL DEFAULT ''"
         )
+    for name, kind in (
+        ("resolved_mac", "TEXT NOT NULL DEFAULT ''"),
+        ("discovered_switch", "TEXT NOT NULL DEFAULT ''"),
+        ("discovered_port", "TEXT NOT NULL DEFAULT ''"),
+        ("port_type", "TEXT NOT NULL DEFAULT ''"),
+        ("hunt_trace_json", "TEXT NOT NULL DEFAULT '[]'"),
+        ("hunt_time_ms", "REAL NOT NULL DEFAULT 0"),
+        ("trunk_guard_warning", "TEXT NOT NULL DEFAULT ''"),
+        ("containment_mode", "TEXT NOT NULL DEFAULT 'vlan'"),
+        ("approval_channel", "TEXT NOT NULL DEFAULT ''"),
+        ("approved_action", "TEXT NOT NULL DEFAULT ''"),
+        ("approval_response_ms", "REAL NOT NULL DEFAULT 0"),
+    ):
+        if name not in ticket_columns:
+            conn.execute(f"ALTER TABLE incident_tickets ADD COLUMN {name} {kind}")
+    operation_columns = _columns(conn, "operation_log")
+    for name, kind in (
+        ("approval_channel", "TEXT NOT NULL DEFAULT ''"),
+        ("approved_action", "TEXT NOT NULL DEFAULT ''"),
+        ("approval_response_ms", "REAL NOT NULL DEFAULT 0"),
+        ("executed_cli", "TEXT NOT NULL DEFAULT '[]'"),
+    ):
+        if name not in operation_columns:
+            conn.execute(f"ALTER TABLE operation_log ADD COLUMN {name} {kind}")
+    pending_rows = conn.execute(
+        """SELECT host_ip, port_role, previous_description
+           FROM network_inventory WHERE port_status = 'PENDING_APPROVAL'"""
+    ).fetchall()
+    for row in pending_rows:
+        try:
+            payload = json.loads(row["previous_description"] or "")
+        except json.JSONDecodeError:
+            LOGGER.error(
+                "pending_approval_payload_invalid host_ip=%s", row["host_ip"]
+            )
+            continue
+        if not isinstance(payload, dict):
+            continue
+        changed = False
+        if not payload.get("approval_id"):
+            payload["approval_id"] = uuid.uuid4().hex
+            changed = True
+        if not payload.get("asset_name"):
+            payload["asset_name"] = row["port_role"]
+            changed = True
+        if not isinstance(payload.get("approval_hunt"), dict):
+            payload["approval_hunt"] = {}
+            changed = True
+        if changed:
+            conn.execute(
+                """UPDATE network_inventory SET previous_description = ?
+                   WHERE host_ip = ? AND port_status = 'PENDING_APPROVAL'""",
+                (json.dumps(payload), row["host_ip"]),
+            )
     conn.execute(
         """UPDATE network_inventory SET port_status = 'ISOLATED'
            WHERE port_status LIKE 'ISOLATED (%'"""
@@ -265,8 +335,74 @@ def mark_pending_approval(host_ip: str, alert_payload: Dict[str, Any]) -> bool:
         conn.close()
 
 
+def get_pending_approvals() -> List[Dict[str, Any]]:
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            """SELECT host_ip, previous_description, approval_requested_at
+               FROM network_inventory WHERE port_status = 'PENDING_APPROVAL'
+               ORDER BY approval_requested_at"""
+        ).fetchall()
+        pending = []
+        for row in rows:
+            try:
+                payload = json.loads(row["previous_description"] or "")
+            except json.JSONDecodeError as exc:
+                LOGGER.error("pending_approval_payload_invalid host_ip=%s", row["host_ip"])
+                raise RuntimeError(
+                    "Pending approval data is invalid; manual review is required."
+                ) from exc
+            if not isinstance(payload, dict):
+                raise RuntimeError(
+                    "Pending approval data is invalid; manual review is required."
+                )
+            hunt = payload.get("approval_hunt", {})
+            pending.append({
+                "alert_id": payload.get("approval_id", ""),
+                "attacker_ip": payload.get("attacker_ip", row["host_ip"]),
+                "target_ip": payload.get("target_ip", ""),
+                "asset_name": payload.get("asset_name", ""),
+                "signature": payload.get("signature", ""),
+                "severity": payload.get("severity", 1),
+                "discovered_switch": hunt.get("switch_hostname", ""),
+                "discovered_port": hunt.get("port", ""),
+                "port_type": hunt.get("port_type", ""),
+                "requested_at": row["approval_requested_at"] or "",
+            })
+        return pending
+    finally:
+        conn.close()
+
+
+def get_pending_approval(alert_id: str) -> Optional[Dict[str, Any]]:
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            """SELECT host_ip, previous_description
+               FROM network_inventory WHERE port_status = 'PENDING_APPROVAL'"""
+        ).fetchall()
+        for row in rows:
+            try:
+                payload = json.loads(row["previous_description"] or "")
+            except json.JSONDecodeError as exc:
+                raise RuntimeError(
+                    "Pending approval data is invalid; manual review is required."
+                ) from exc
+            if isinstance(payload, dict) and payload.get("approval_id") == alert_id:
+                payload["host_ip"] = row["host_ip"]
+                return payload
+        return None
+    finally:
+        conn.close()
+
+
 def resolve_pending_approval(
-    host_ip: str, approved: bool, approver: str = "MOCK_OPERATOR"
+    host_ip: str,
+    approved: bool,
+    approver: str = "MOCK_OPERATOR",
+    approval_channel: str = "Dashboard",
+    approved_action: str = "vlan_isolation",
+    expected_approval_id: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     conn = _connect()
     try:
@@ -288,6 +424,28 @@ def resolve_pending_approval(
             raise RuntimeError("Pending approval payload is invalid; manual review is required.") from exc
         if not isinstance(payload, dict):
             raise RuntimeError("Pending approval payload is invalid; manual review is required.")
+        if (
+            expected_approval_id is not None
+            and payload.get("approval_id") != expected_approval_id
+        ):
+            conn.rollback()
+            return None
+        requested = row["approval_requested_at"] or row["last_updated"]
+        try:
+            requested_at = datetime.fromisoformat(requested)
+            if requested_at.tzinfo is None:
+                requested_at = requested_at.replace(tzinfo=timezone.utc)
+            response_ms = max(
+                0.0,
+                (datetime.now(timezone.utc) - requested_at).total_seconds() * 1000,
+            )
+        except ValueError as exc:
+            raise RuntimeError(
+                "Pending approval timestamp is invalid; manual review is required."
+            ) from exc
+        payload["approval_channel"] = approval_channel
+        payload["approved_action"] = approved_action
+        payload["approval_response_ms"] = round(response_ms, 2)
         conn.execute(
             """UPDATE network_inventory SET port_status = 'SECURE',
                previous_description = NULL, approval_requested_at = NULL,
@@ -297,12 +455,20 @@ def resolve_pending_approval(
         if not approved:
             _insert_operation(
                 conn, "approval_rejected", host_ip, "REJECTED",
-                f"Critical asset alert was rejected by operator {approver}.", 0.0, [],
+                f"Critical asset alert was rejected by operator {approver}.",
+                response_ms, [],
+                approval_channel=approval_channel,
+                approved_action="rejected",
+                approval_response_ms=response_ms,
             )
         else:
             _insert_operation(
                 conn, "approval_approved", host_ip, "APPROVED",
-                f"Critical asset alert was approved by operator {approver}.", 0.0, [],
+                f"Critical asset alert was approved by operator {approver}.",
+                response_ms, [],
+                approval_channel=approval_channel,
+                approved_action=approved_action,
+                approval_response_ms=response_ms,
             )
         conn.commit()
         return payload
@@ -381,12 +547,20 @@ def _insert_operation(
     message: str,
     execution_time_ms: float,
     steps: List[Dict[str, Any]],
+    approval_channel: str = "",
+    approved_action: str = "",
+    approval_response_ms: float = 0.0,
+    executed_cli: str = "[]",
 ) -> None:
     conn.execute(
         """INSERT INTO operation_log
-           (completed_at, action, host_ip, result, message, execution_time_ms, steps_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (_now(), action, host_ip, result, message, execution_time_ms, json.dumps(steps)),
+           (completed_at, action, host_ip, result, message, execution_time_ms, steps_json,
+            approval_channel, approved_action, approval_response_ms, executed_cli)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            _now(), action, host_ip, result, message, execution_time_ms, json.dumps(steps),
+            approval_channel, approved_action, approval_response_ms, executed_cli,
+        ),
     )
 
 
@@ -433,6 +607,10 @@ def fail_operation(
     steps: List[Dict[str, Any]],
     previous_vlan: Optional[int] = None,
     previous_description: Optional[str] = None,
+    approval_channel: str = "",
+    approved_action: str = "",
+    approval_response_ms: float = 0.0,
+    executed_cli: str = "[]",
 ) -> None:
     if safe_state not in {"SECURE", "ISOLATED", "ERROR_REQUIRES_REVIEW"}:
         raise ValueError("Invalid operation recovery state.")
@@ -447,7 +625,11 @@ def fail_operation(
             (safe_state, previous_vlan, previous_description, _now(), host_ip),
         )
         _insert_operation(
-            conn, action, host_ip, "FAILED", message, execution_time_ms, steps
+            conn, action, host_ip, "FAILED", message, execution_time_ms, steps,
+            approval_channel=approval_channel,
+            approved_action=approved_action,
+            approval_response_ms=approval_response_ms,
+            executed_cli=executed_cli,
         )
         conn.execute(
             "DELETE FROM switch_operation_locks WHERE host_ip = ?", (host_ip,)
@@ -470,6 +652,11 @@ def finalize_isolation(
     execution_time_ms: float,
     executed_cli: str,
     steps: List[Dict[str, Any]],
+    hunt_trace: Optional[Dict[str, Any]] = None,
+    containment_mode: str = "vlan",
+    approval_channel: str = "",
+    approved_action: str = "",
+    approval_response_ms: float = 0.0,
 ) -> Dict[str, Any]:
     conn = _connect()
     try:
@@ -502,18 +689,35 @@ def finalize_isolation(
             ticket_data["target_ip"], ticket_data["signature"], ticket_data["severity"],
             ticket_data["switch_hostname"], ticket_data["vendor"], ticket_data["isolated_port"],
             assigned_vlan, span_destination, execution_time_ms, executed_cli, "CONTAINED",
+            ticket_data.get("resolved_mac", ticket_data["attacker_mac"]),
+            ticket_data.get("discovered_switch", ticket_data["switch_hostname"]),
+            ticket_data.get("discovered_port", ticket_data["isolated_port"]),
+            ticket_data.get("port_type", ""),
+            json.dumps(hunt_trace or {}),
+            float((hunt_trace or {}).get("hunt_time_ms", 0.0)),
+            ticket_data.get("trunk_guard_warning", ""),
+            containment_mode,
+            approval_channel,
+            approved_action,
+            approval_response_ms,
         )
         conn.execute(
             """INSERT INTO incident_tickets
                (ticket_id, timestamp, attacker_ip, attacker_mac, target_ip, signature,
                 severity, switch_hostname, vendor, isolated_port, assigned_vlan,
-                span_destination, execution_time_ms, executed_cli, ticket_status)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                span_destination, execution_time_ms, executed_cli, ticket_status,
+                resolved_mac, discovered_switch, discovered_port, port_type,
+                hunt_trace_json, hunt_time_ms, trunk_guard_warning, containment_mode,
+                approval_channel, approved_action, approval_response_ms)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             values,
         )
         _insert_operation(
             conn, "isolate", host_ip, "SUCCESS", "Host isolation verified.",
-            execution_time_ms, steps,
+            execution_time_ms, steps, approval_channel=approval_channel,
+            approved_action=approved_action,
+            approval_response_ms=approval_response_ms,
+            executed_cli=executed_cli,
         )
         conn.execute(
             "DELETE FROM switch_operation_locks WHERE host_ip = ?", (host_ip,)
@@ -599,7 +803,8 @@ def get_last_operation() -> Optional[Dict[str, Any]]:
     conn = _connect()
     try:
         row = conn.execute(
-            """SELECT action, host_ip, result, message, completed_at
+            """SELECT action, host_ip, result, message, completed_at,
+                      approval_channel, approved_action, approval_response_ms, executed_cli
                FROM operation_log ORDER BY id DESC LIMIT 1"""
         ).fetchone()
         if row is None:

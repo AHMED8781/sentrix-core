@@ -171,6 +171,34 @@
     .cli-view { margin-top: 8px; }
     .cli-view summary { color: var(--cyan); cursor: pointer; font-size: 10px; }
     .cli-view pre { max-width: 360px; max-height: 180px; overflow: auto; margin: 8px 0 0; padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: #0a111d; color: #b6d2e8; font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .trace-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+    .trace-controls input { flex: 1; min-width: 0; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #0b1220; color: #fff; }
+    .trace-path { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 8px 0; }
+    .trace-node { padding: 6px 8px; border: 1px solid #2f4d63; border-radius: 7px; background: #102130; color: #d7eff4; font-size: 10px; overflow-wrap: anywhere; }
+    .trace-arrow { color: var(--cyan); font-size: 12px; }
+    .trace-warning { margin: 8px 0; padding: 9px 10px; border: 1px solid #745b32; border-radius: 8px; background: #302719; color: #ffe0a0; font-size: 11px; line-height: 1.5; }
+    .trace-result { color: var(--muted); font-size: 11px; }
+    .device-actions { flex-wrap: wrap; }
+    .chatops-launcher { position: fixed; right: 20px; bottom: 20px; z-index: 3; box-shadow: 0 12px 35px #0008; }
+    .chatops-drawer { position: fixed; right: 20px; bottom: 72px; z-index: 3; width: min(390px, calc(100vw - 32px)); max-height: min(760px, calc(100vh - 100px)); overflow: auto; border: 1px solid #34516a; border-radius: 16px; background: #101a29; box-shadow: 0 24px 70px #000b; }
+    .chatops-drawer[hidden] { display: none; }
+    .chatops-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 15px; border-bottom: 1px solid var(--line); }
+    .chatops-head strong { color: #fff; font-size: 13px; }
+    .chatops-content { padding: 13px; }
+    .phone-frame { max-width: 330px; margin: auto; padding: 9px; border: 2px solid #40516a; border-radius: 27px; background: #080e17; box-shadow: inset 0 0 0 1px #000; }
+    .phone-screen { min-height: 200px; padding: 14px 12px; border-radius: 19px; background: linear-gradient(160deg, #172539, #0d1624); }
+    .phone-status { display: flex; justify-content: space-between; margin-bottom: 12px; color: #9cadc2; font-size: 9px; }
+    .telegram-brand { margin: 0 0 9px; color: #83dded; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+    .chat-alert { padding: 11px; border: 1px solid #34465d; border-radius: 11px; background: #1b2a3e; }
+    .chat-alert-title { margin: 0 0 7px; color: #fff; font-size: 12px; font-weight: 750; }
+    .chat-alert-copy { margin: 0; color: #becbd9; font-size: 10px; line-height: 1.65; overflow-wrap: anywhere; }
+    .chat-buttons { display: grid; gap: 6px; margin-top: 10px; }
+    .chat-buttons .button { min-height: 34px; padding: 6px 8px; font-size: 10px; }
+    .chatops-empty { padding: 14px 8px; color: var(--muted); font-size: 11px; text-align: center; line-height: 1.5; }
+    .chatops-config { display: grid; gap: 8px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .chatops-config input { width: 100%; min-height: 34px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: #0b1220; color: #fff; font-size: 10px; }
+    .chatops-config-status { color: var(--muted); font-size: 10px; }
+    .channel-badge { display: inline-flex; margin-top: 5px; padding: 3px 6px; border: 1px solid #31566a; border-radius: 999px; background: #102532; color: #a9e3ed; font-size: 9px; }
     .empty, .loading, .error-state { padding: 28px 16px; color: var(--muted); text-align: center; font-size: 12px; line-height: 1.6; }
     .error-state { color: #ffc0c3; }
     .skeleton { display: block; height: 12px; margin: 8px auto; border-radius: 6px; background: linear-gradient(90deg, #152238, #22334b, #152238); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
@@ -321,6 +349,16 @@
               <p class="topology-disclaimer" id="topology-disclaimer">Inventory topology · not a real-time network map.</p>
             </div>
           </section>
+          <section class="panel" aria-labelledby="hunt-title">
+            <div class="panel-header"><h2 class="panel-title" id="hunt-title"><span class="accent"></span>IP-to-Port Trace</h2></div>
+            <div class="panel-body">
+              <form class="trace-controls" id="hunt-form">
+                <input id="hunt-ip" name="ip" type="text" inputmode="decimal" placeholder="Private IPv4 address" aria-label="IP address to trace" required>
+                <button class="button primary" type="submit">Run trace</button>
+              </form>
+              <div id="hunt-result" class="trace-result" aria-live="polite">Trace any inventoried endpoint or use a Trace IP button on a device card.</div>
+            </div>
+          </section>
           <section class="panel" aria-labelledby="last-operation-title">
             <div class="panel-header"><h2 class="panel-title" id="last-operation-title"><span class="accent"></span>Last operation</h2></div>
             <div class="panel-body" id="last-operation"><div class="loading">Waiting for system status…</div></div>
@@ -342,6 +380,24 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <button class="button primary chatops-launcher" id="chatops-launcher" type="button" aria-expanded="false">📱 ChatOps</button>
+  <section class="chatops-drawer" id="chatops-drawer" aria-label="ChatOps mobile simulator" hidden>
+    <div class="chatops-head"><strong>📱 ChatOps Mobile Alert</strong><button class="button" id="chatops-close" type="button" aria-label="Close mobile simulator">×</button></div>
+    <div class="chatops-content">
+      <div class="phone-frame"><div class="phone-screen">
+        <div class="phone-status"><span id="phone-clock">--:--</span><span>●●●  Wi-Fi  100%</span></div>
+        <p class="telegram-brand">TELEGRAM · SENTRIX RESPONSE BOT</p>
+        <div id="chatops-alerts"><div class="chatops-empty">No critical asset is waiting for approval.</div></div>
+      </div></div>
+      <div class="chatops-config">
+        <div class="chatops-config-status" id="telegram-config-status">Checking Telegram configuration…</div>
+        <input id="telegram-bot-token" type="password" autocomplete="off" placeholder="Telegram bot token (kept in memory only)" aria-label="Telegram bot token">
+        <input id="telegram-chat-id" type="text" autocomplete="off" placeholder="Admin Telegram chat ID" aria-label="Telegram admin chat ID">
+        <button class="button" id="telegram-config-save" type="button">Save Telegram settings</button>
+        <button class="button" id="chatops-demo-test" type="button">Send demo critical alert</button>
+      </div>
+    </div>
+  </section>
   <dialog id="change-dialog" aria-labelledby="dialog-title">
     <form method="dialog" class="dialog-content" id="change-form">
       <h2 id="dialog-title">Confirm lab network change</h2>
@@ -351,6 +407,12 @@
       <div id="approval-token-group" hidden>
         <label for="approval-token">Approval-specific token <span class="subtle">(required for LIVE approvals)</span></label>
         <input id="approval-token" type="password" autocomplete="off" placeholder="Enter the separate approval token">
+      </div>
+      <div id="chatops-config-live-group" hidden>
+        <label for="chatops-config-live-token">Live-change token for Telegram settings</label>
+        <input id="chatops-config-live-token" type="password" autocomplete="off">
+        <label for="chatops-config-live-confirm">Type I_CONFIRM_GNS3_LAB_CHANGE</label>
+        <input id="chatops-config-live-confirm" type="text" autocomplete="off">
       </div>
       <label class="confirm-check"><input id="confirm-lab" type="checkbox"><span>I confirm this change is intended for my authorized GNS3 lab.</span></label>
       <div class="dialog-actions">
@@ -366,8 +428,11 @@
       mode: "MOCK",
       inventory: [],
       tickets: [],
+      pendingApprovals: [],
       busy: false,
       pending: null,
+      chatopsPending: null,
+      chatopsAutoOpened: false,
       demoStep: Math.min(3, Math.max(0, Number(localStorage.getItem("sentrix-demo-step")) || 0)),
       lastOperation: null
     };
@@ -522,6 +587,7 @@
           && ["SECURE", "PENDING_APPROVAL", "ISOLATED"].includes(item.port_status)
           ? `<button class="button" data-action="reconcile" data-ip="${escapeHtml(item.host_ip)}">Check switch state</button>`
           : "";
+        const trace = `<button class="button" data-action="trace" data-ip="${escapeHtml(item.host_ip)}">Trace IP</button>`;
         const span = item.span_status === "DISABLED" ? "Off" : item.span_status;
         return `<article class="device-card" style="animation-delay:${Math.min(index * 35, 180)}ms">
           <div class="device-top"><div><h3 class="device-name">${escapeHtml(item.switch_hostname)}</h3><div class="device-address">${escapeHtml(item.switch_ip)} · ${escapeHtml(item.switch_vendor)}</div></div>${statusBadge(item.port_status)}</div>
@@ -531,7 +597,7 @@
             <div><div class="detail-label">Current VLAN</div><div class="detail-value">${escapeHtml(item.current_vlan)}</div></div>
             <div><div class="detail-label">SPAN</div><div class="detail-value">${escapeHtml(span)}</div></div>
           </div>
-          <div class="device-footer"><span class="device-role">${escapeHtml(item.port_role)}</span><div class="device-actions">${action}${reconcile}</div></div>
+          <div class="device-footer"><span class="device-role">${escapeHtml(item.port_role)}</span><div class="device-actions">${action}${reconcile}${trace}</div></div>
         </article>`;
       }).join("");
       container.querySelectorAll("button[data-action]").forEach((button) => {
@@ -540,6 +606,7 @@
           if (button.dataset.action === "restore") askForChange("restore", button.dataset.ip);
           if (button.dataset.action === "approve" || button.dataset.action === "reject") askForChange(button.dataset.action, button.dataset.ip);
           if (button.dataset.action === "reconcile") askForChange("reconcile", button.dataset.ip);
+          if (button.dataset.action === "trace") runHunt(button.dataset.ip);
         });
       });
     }
@@ -555,6 +622,23 @@
       tbody.innerHTML = state.tickets.map((ticket) => {
         const timestamp = new Date(ticket.timestamp);
         const time = Number.isNaN(timestamp.getTime()) ? "—" : timestamp.toISOString().replace("T", " ").slice(0, 19);
+        let hunt = {};
+        try { hunt = JSON.parse(ticket.hunt_trace_json || "{}"); } catch (error) { hunt = {}; }
+        const traceSteps = Array.isArray(hunt.trace) ? hunt.trace : [];
+        const physicalPort = ticket.port_type === "trunk" ? "Trunk" : ticket.port_type === "multi-mac" ? "Access · Multi-MAC" : "Access";
+        const traceCommands = traceSteps.map((step) => `${step.command}\n${step.output || ""}`).join("\n\n");
+        const path = `<div class="trace-path">
+          <span class="trace-node">${escapeHtml(ticket.attacker_ip)}</span><span class="trace-arrow">➔</span>
+          <span class="trace-node">${escapeHtml(ticket.resolved_mac || ticket.attacker_mac)}</span><span class="trace-arrow">➔</span>
+          <span class="trace-node">${escapeHtml(ticket.discovered_switch || ticket.switch_hostname)}</span><span class="trace-arrow">➔</span>
+          <span class="trace-node">${escapeHtml(ticket.discovered_port || ticket.isolated_port)} · ${physicalPort}</span>
+        </div>`;
+        const warning = ticket.trunk_guard_warning
+          ? `<div class="trace-warning">${escapeHtml(ticket.trunk_guard_warning)}</div>`
+          : "";
+        const approvalBadge = ticket.approval_channel
+          ? `<span class="channel-badge">${escapeHtml(ticket.approval_channel)} · ${escapeHtml(ticket.approved_action)} · ${Number(ticket.approval_response_ms || 0).toFixed(0)} ms</span>`
+          : "";
         const badge = ticket.ticket_status === "CONTAINED"
           ? '<span class="badge isolated">Contained</span>'
           : '<span class="badge secure">Resolved</span>';
@@ -562,7 +646,7 @@
           <td class="ticket-id">${escapeHtml(ticket.ticket_id)}</td>
           <td>${escapeHtml(time)}</td>
           <td><span>${escapeHtml(ticket.attacker_ip)}</span><br><span class="subtle">→ ${escapeHtml(ticket.target_ip)}</span></td>
-          <td class="signature">${escapeHtml(ticket.signature)}<details class="cli-view"><summary>Show executed CLI</summary><pre>${escapeHtml(ticket.executed_cli || "[]")}</pre></details></td>
+          <td class="signature">${escapeHtml(ticket.signature)}${approvalBadge}<details class="cli-view"><summary>Network Trace Path · ${Number(ticket.hunt_time_ms || 0).toFixed(1)} ms</summary>${path}${warning}<div class="trace-result">Containment mode: ${escapeHtml(ticket.containment_mode || "vlan")}</div><details class="cli-view"><summary>Show discovery CLI trace</summary><pre>${escapeHtml(traceCommands || "No trace recorded.")}</pre></details><details class="cli-view"><summary>Show isolation CLI</summary><pre>${escapeHtml(ticket.executed_cli || "[]")}</pre></details></details></td>
           <td>${escapeHtml(ticket.assigned_vlan)}</td>
           <td>${Number(ticket.execution_time_ms).toFixed(1)} ms</td>
           <td>${badge}</td>
@@ -589,7 +673,9 @@
         <div class="operation-row"><span>Host</span><span>${escapeHtml(operation.host_ip)}</span></div>
         <div class="operation-row"><span>Result</span><span class="${resultClass}">${escapeHtml(operation.result)}</span></div>
         <div class="operation-row"><span>Completed</span><span>${escapeHtml(completed)}</span></div>
+        ${operation.approval_channel ? `<div class="operation-row"><span>Approval</span><span>${escapeHtml(operation.approval_channel)} · ${escapeHtml(operation.approved_action)} · ${Number(operation.approval_response_ms || 0).toFixed(0)} ms</span></div>` : ""}
         <p class="operation-message">${escapeHtml(operation.message)}</p>
+        ${operation.executed_cli && operation.executed_cli !== "[]" ? `<details class="cli-view"><summary>Show audited CLI</summary><pre>${escapeHtml(operation.executed_cli)}</pre></details>` : ""}
       </div>`;
     }
 
@@ -597,6 +683,7 @@
       state.mode = data.metrics.engine_mode;
       state.inventory = data.inventory;
       state.tickets = data.tickets;
+      state.pendingApprovals = data.pending_approvals || [];
       state.lastOperation = data.last_operation;
       syncDemoProgress();
       byId("mode-label").textContent = state.mode;
@@ -607,6 +694,7 @@
       byId("test-alert-button").hidden = state.mode !== "MOCK";
       byId("unknown-host-button").hidden = state.mode !== "MOCK";
       byId("critical-alert-button").hidden = state.mode !== "MOCK";
+      byId("chatops-config-live-group").hidden = state.mode !== "LIVE";
       byId("metric-alerts").textContent = data.metrics.total_alerts;
       byId("metric-isolated").textContent = data.metrics.currently_isolated;
       byId("metric-approvals").textContent = data.metrics.pending_approvals;
@@ -619,6 +707,7 @@
       renderInventory();
       renderTopology();
       renderTickets();
+      renderChatOps();
       renderLastOperation(data.last_operation);
       renderGuidedDemo();
     }
@@ -628,6 +717,189 @@
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.detail || `Request failed (${response.status}).`);
       return payload;
+    }
+
+    function renderChatOps() {
+      const container = byId("chatops-alerts");
+      if (!state.pendingApprovals.length) {
+        state.chatopsAutoOpened = false;
+        container.innerHTML = '<div class="chatops-empty">No critical asset is waiting for approval.</div>';
+        return;
+      }
+      if (!state.chatopsAutoOpened) {
+        byId("chatops-drawer").hidden = false;
+        byId("chatops-launcher").setAttribute("aria-expanded", "true");
+        state.chatopsAutoOpened = true;
+      }
+      container.innerHTML = state.pendingApprovals.map((alert) => `
+        <article class="chat-alert">
+          <p class="chat-alert-title">🚨 Critical asset approval</p>
+          <p class="chat-alert-copy">
+            Alert: ${escapeHtml(alert.alert_id)}<br>
+            Asset: ${escapeHtml(alert.asset_name)}<br>
+            Compromised IP: ${escapeHtml(alert.attacker_ip)}<br>
+            Switch / port: ${escapeHtml(alert.discovered_switch)} / ${escapeHtml(alert.discovered_port)}<br>
+            Port mode: ${escapeHtml(alert.port_type === "trunk" ? "Trunk" : alert.port_type === "multi-mac" ? "Access (multi-MAC)" : "Access")}<br>
+            Severity: ${escapeHtml(alert.severity)} · ${escapeHtml(alert.signature)}
+          </p>
+          <div class="chat-buttons">
+            <button class="button restore" data-chat-alert="${escapeHtml(alert.alert_id)}" data-chat-action="approve_vlan">🔒 Isolate VLAN</button>
+            <button class="button" data-chat-alert="${escapeHtml(alert.alert_id)}" data-chat-action="approve_acl">🛡️ Surgical ACL Only</button>
+            <button class="button" data-chat-alert="${escapeHtml(alert.alert_id)}" data-chat-action="reject">❌ Reject / False Positive</button>
+          </div>
+        </article>`).join("");
+      container.querySelectorAll("button[data-chat-action]").forEach((button) => {
+        button.addEventListener("click", () =>
+          runChatOpsAction(button.dataset.chatAlert, button.dataset.chatAction)
+        );
+      });
+    }
+
+    async function refreshTelegramConfig() {
+      try {
+        const config = await request("/api/chatops/config");
+        byId("telegram-config-status").textContent = config.configured
+          ? `Telegram configured · admin chat ${config.chat_id_hint}`
+          : "Telegram is not configured. Mobile simulator works offline.";
+      } catch (error) {
+        byId("telegram-config-status").textContent = error.message;
+      }
+    }
+
+    async function saveTelegramConfig() {
+      const body = {};
+      if (byId("telegram-bot-token").value.trim()) {
+        body.telegram_bot_token = byId("telegram-bot-token").value.trim();
+      }
+      if (byId("telegram-chat-id").value.trim()) {
+        body.telegram_chat_id = byId("telegram-chat-id").value.trim();
+      }
+      if (!Object.keys(body).length) {
+        showToast("Enter a bot token and/or admin chat ID to update.");
+        return;
+      }
+      const headers = {};
+      if (state.mode === "LIVE") {
+        const token = byId("chatops-config-live-token").value;
+        const confirmation = byId("chatops-config-live-confirm").value;
+        if (!token || confirmation !== "I_CONFIRM_GNS3_LAB_CHANGE") {
+          showToast("LIVE configuration requires the live-change token and exact confirmation.");
+          return;
+        }
+        headers["X-SENTRIX-LIVE-TOKEN"] = token;
+        headers["X-CONFIRM-LIVE-CHANGE"] = confirmation;
+      }
+      try {
+        await request("/api/chatops/config", { method: "POST", headers, body: JSON.stringify(body) });
+        byId("telegram-bot-token").value = "";
+        byId("telegram-chat-id").value = "";
+        byId("chatops-config-live-token").value = "";
+        byId("chatops-config-live-confirm").value = "";
+        await refreshTelegramConfig();
+        showToast("Telegram runtime settings updated.");
+      } catch (error) {
+        showToast(error.message);
+      }
+    }
+
+    async function runChatOpsAction(alertId, action) {
+      const alert = state.pendingApprovals.find((item) => item.alert_id === alertId);
+      if (!alert || state.busy) return;
+      if (state.mode === "LIVE") {
+        state.chatopsPending = { alertId, action };
+        state.pending = { action: "chatops", ip: alert.attacker_ip };
+        byId("dialog-title").textContent = "Confirm ChatOps approval";
+        byId("dialog-description").textContent = `Approve ${action.replace("_", " ")} for ${alert.asset_name} (${alert.attacker_ip})? The endpoint and port will be re-traced and Smart Trunk Guard remains active.`;
+        byId("live-token").value = "";
+        byId("approval-token").value = "";
+        byId("approval-token-group").hidden = false;
+        byId("confirm-lab").checked = false;
+        byId("change-dialog").showModal();
+        byId("live-token").focus();
+        return;
+      }
+      await executeChatOpsAction(alertId, action);
+    }
+
+    async function executeChatOpsAction(alertId, action, headers = {}) {
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        const result = await request("/api/chatops/action", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            alert_id: alertId,
+            action,
+            channel: "Mobile Simulator"
+          })
+        });
+        showToast(result.status === "REJECTED"
+          ? "Critical alert rejected; no containment was performed."
+          : "ChatOps approval processed. Smart Trunk Guard is still enforced.");
+        await refresh();
+      } catch (error) {
+        showToast(error.message);
+        await refresh();
+      } finally {
+        state.chatopsPending = null;
+        setBusy(false);
+      }
+    }
+
+    async function triggerChatOpsDemo() {
+      if (state.mode !== "MOCK") {
+        showToast("The simulated critical-asset alert is available in MOCK mode only.");
+        return;
+      }
+      try {
+        await request("/api/chatops/test", { method: "POST" });
+        byId("chatops-drawer").hidden = false;
+        byId("chatops-launcher").setAttribute("aria-expanded", "true");
+        showToast("Critical asset approval sent to the mobile simulator.");
+        await refresh();
+      } catch (error) {
+        showToast(error.message);
+      }
+    }
+
+    function renderHunt(hunt) {
+      const container = byId("hunt-result");
+      const portType = hunt.port_type === "trunk" ? "Trunk" : hunt.port_type === "multi-mac" ? "Access · Multi-MAC" : "Access";
+      const path = [
+        hunt.target_ip,
+        hunt.resolved_mac,
+        hunt.switch_hostname,
+        `${hunt.port} · ${portType}`
+      ];
+      const steps = Array.isArray(hunt.trace) ? hunt.trace : [];
+      const commands = steps.map((step) =>
+        `${step.command} · ${Number(step.execution_time_ms || 0).toFixed(2)} ms\n${step.output || ""}`
+      ).join("\n\n");
+      container.innerHTML = `<div class="trace-path">${path.map((node, index) =>
+        `${index ? '<span class="trace-arrow">➔</span>' : ""}<span class="trace-node">${escapeHtml(node || "—")}</span>`
+      ).join("")}</div>
+      ${hunt.warning ? `<div class="trace-warning">${escapeHtml(hunt.warning)}</div>` : ""}
+      <div class="trace-result">${steps.length} CLI steps · ${Number(hunt.hunt_time_ms || 0).toFixed(2)} ms total</div>
+      <details class="cli-view"><summary>Show exact discovery commands and output</summary><pre>${escapeHtml(commands || "No commands recorded.")}</pre></details>`;
+    }
+
+    async function runHunt(ip) {
+      if (!ip || state.busy) return;
+      if (state.mode === "LIVE") {
+        askForChange("hunt", ip);
+        return;
+      }
+      setBusy(true);
+      byId("hunt-result").textContent = `Tracing ${ip}…`;
+      try {
+        renderHunt(await request(`/api/hunt/${encodeURIComponent(ip)}`, { method: "POST" }));
+      } catch (error) {
+        byId("hunt-result").textContent = error.message;
+        showToast(error.message);
+      } finally {
+        setBusy(false);
+      }
     }
 
     async function refresh() {
@@ -729,8 +1001,9 @@
 
     function askForChange(action, ip) {
       const record = state.inventory.find((item) => item.host_ip === ip);
-      if (!record) return;
+      if (!record && action !== "hunt") return;
       if (state.mode === "MOCK") {
+        if (action === "hunt") return runHunt(ip);
         const message = action === "restore"
           ? `Restore ${ip} to its saved pre-isolation state?`
           : action === "approve"
@@ -758,7 +1031,9 @@
       byId("dialog-title").textContent = action === "reconcile"
         ? "Check switch state"
         : "Confirm lab network change";
-      byId("dialog-description").textContent = action === "reconcile"
+      byId("dialog-description").textContent = action === "hunt"
+        ? `Run a read-only IP-to-port trace for ${ip}. This queries only switches and endpoints explicitly configured for the authorized lab.`
+        : action === "reconcile"
         ? `Read current VLAN, description, ACL, and configured SPAN state for ${record.switch_hostname}, port ${record.port_interface}, host ${ip}. This check does not change switch configuration.`
         : `${description} ${record.switch_hostname} (${record.switch_ip}), port ${record.port_interface}, host ${ip}. This action is recorded and requires the live-change token.`;
       byId("live-token").value = "";
@@ -776,11 +1051,31 @@
         "X-SENTRIX-LIVE-TOKEN": token,
         "X-CONFIRM-LIVE-CHANGE": "I_CONFIRM_GNS3_LAB_CHANGE"
       } : {};
-      if (state.mode === "LIVE" && ["approve", "reject"].includes(action)) {
+      if (state.mode === "LIVE" && ["approve", "reject", "chatops"].includes(action)) {
         headers["X-SENTRIX-APPROVAL-TOKEN"] = approvalToken;
+        headers["X-Authenticated-User"] = action === "chatops"
+          ? "SENTRIX_MOBILE_SIMULATOR_OPERATOR"
+          : "SENTRIX_DASHBOARD_OPERATOR";
       }
       try {
-        if (action === "reconcile") {
+        if (action === "chatops") {
+          if (!state.chatopsPending) throw new Error("ChatOps approval context expired.");
+          const result = await request("/api/chatops/action", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              alert_id: state.chatopsPending.alertId,
+              action: state.chatopsPending.action,
+              channel: "Mobile Simulator"
+            })
+          });
+          showToast(result.status === "REJECTED"
+            ? "Critical alert rejected; no containment was performed."
+            : "ChatOps approval processed. Smart Trunk Guard is still enforced.");
+        } else if (action === "hunt") {
+          renderHunt(await request(`/api/hunt/${encodeURIComponent(ip)}`, { method: "POST", headers }));
+          showToast("IP-to-port trace completed.");
+        } else if (action === "reconcile") {
           const result = await request(
             `/api/reconcile/${encodeURIComponent(ip)}`, { headers }
           );
@@ -816,6 +1111,7 @@
         showToast(error.message);
         await refresh();
       } finally {
+        state.chatopsPending = null;
         setBusy(false);
       }
     }
@@ -825,6 +1121,8 @@
       document.querySelectorAll(".demo-console button, .demo-console select").forEach((button) => { button.disabled = busy; });
       byId("refresh-button").disabled = busy;
       document.querySelectorAll(".device-card button").forEach((button) => { button.disabled = busy; });
+      document.querySelectorAll("#hunt-form button").forEach((button) => { button.disabled = busy; });
+      document.querySelectorAll("#chatops-alerts button, #chatops-config-save, #chatops-demo-test").forEach((button) => { button.disabled = busy; });
       if (!busy) renderGuidedDemo();
     }
 
@@ -863,11 +1161,31 @@
     byId("test-alert-button").addEventListener("click", () => runTest());
     byId("unknown-host-button").addEventListener("click", () => runTest("192.168.10.77"));
     byId("critical-alert-button").addEventListener("click", () => runTest("192.168.10.100"));
+    byId("chatops-launcher").addEventListener("click", () => {
+      const drawer = byId("chatops-drawer");
+      drawer.hidden = !drawer.hidden;
+      byId("chatops-launcher").setAttribute("aria-expanded", String(!drawer.hidden));
+    });
+    byId("chatops-close").addEventListener("click", () => {
+      byId("chatops-drawer").hidden = true;
+      byId("chatops-launcher").setAttribute("aria-expanded", "false");
+    });
+    byId("telegram-config-save").addEventListener("click", saveTelegramConfig);
+    byId("chatops-demo-test").addEventListener("click", triggerChatOpsDemo);
+    byId("hunt-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      runHunt(byId("hunt-ip").value.trim());
+    });
     byId("refresh-button").addEventListener("click", refresh);
-    function updateClock() { byId("clock").textContent = new Date().toLocaleTimeString([], { hour12: false }) + " local"; }
+    function updateClock() {
+      const now = new Date();
+      byId("clock").textContent = now.toLocaleTimeString([], { hour12: false }) + " local";
+      byId("phone-clock").textContent = now.toLocaleTimeString([], { hour12: false });
+    }
     updateClock();
     setInterval(updateClock, 1000);
     refresh();
+    refreshTelegramConfig();
     setInterval(refresh, 15000);
   </script>
 </body>

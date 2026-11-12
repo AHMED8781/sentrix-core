@@ -9,12 +9,17 @@ from fastapi.testclient import TestClient
 
 import containment
 import database as db
+import main
 from main import app
 
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("SENTRIX_MODE", "MOCK")
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+    monkeypatch.setitem(containment._TELEGRAM_RUNTIME_CONFIG, "token", None)
+    monkeypatch.setitem(containment._TELEGRAM_RUNTIME_CONFIG, "chat_id", None)
     monkeypatch.setattr(db, "DB_PATH", str(tmp_path / "test.db"))
     with TestClient(app) as test_client:
         yield test_client
@@ -144,6 +149,206 @@ def test_critical_server_alert_requires_approval_and_can_be_rejected_or_approved
     assert db.lookup_host("192.168.10.100")["port_status"] == "ISOLATED"
 
 
+def _create_chatops_demo_alert(client):
+    response = client.post("/api/chatops/test")
+    assert response.status_code == 202
+    pending = response.json()
+    assert pending["status"] == "PENDING_APPROVAL"
+    return pending["alert_id"]
+
+
+def test_chatops_vlan_approval_creates_ticket_with_channel_and_audit(client):
+    alert_id = _create_chatops_demo_alert(client)
+    pending = client.get("/api/state").json()["pending_approvals"]
+    assert pending[0]["alert_id"] == alert_id
+    assert pending[0]["asset_name"] == "Production File Server"
+    assert pending[0]["discovered_port"] == "Gi0/10"
+
+    response = client.post(
+        "/api/chatops/action",
+        json={
+            "alert_id": alert_id,
+            "action": "approve_vlan",
+            "channel": "Mobile Simulator",
+        },
+    )
+
+    assert response.status_code == 200
+    ticket = response.json()
+    assert ticket["containment_mode"] == "vlan"
+    assert ticket["approval_channel"] == "Mobile Simulator"
+    assert ticket["approved_action"] == "vlan_isolation"
+    assert ticket["approval_response_ms"] >= ticket["execution_time_ms"]
+    assert "switchport access vlan 999" in ticket["executed_cli"]
+    operation = db.get_last_operation()
+    assert operation["approval_channel"] == "Mobile Simulator"
+    assert operation["approved_action"] == "vlan_isolation"
+    assert operation["executed_cli"] == ticket["executed_cli"]
+
+
+def test_chatops_acl_approval_uses_surgical_acl_and_audits(client):
+    alert_id = _create_chatops_demo_alert(client)
+
+    response = client.post(
+        "/api/chatops/action",
+        json={
+            "alert_id": alert_id,
+            "action": "approve_acl",
+            "channel": "Mobile Simulator",
+        },
+    )
+
+    assert response.status_code == 200
+    ticket = response.json()
+    assert ticket["containment_mode"] == "acl"
+    assert ticket["approval_channel"] == "Mobile Simulator"
+    assert ticket["approved_action"] == "surgical_acl"
+    assert "ip access-group SENTRIX_ACL_192_168_10_100 in" in ticket["executed_cli"]
+    assert db.lookup_host("192.168.10.100")["current_vlan"] == 10
+
+
+def test_chatops_rejection_is_audited_without_creating_containment_ticket(client):
+    alert_id = _create_chatops_demo_alert(client)
+
+    response = client.post(
+        "/api/chatops/action",
+        json={
+            "alert_id": alert_id,
+            "action": "reject",
+            "channel": "Mobile Simulator",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "REJECTED"
+    assert db.lookup_host("192.168.10.100")["port_status"] == "SECURE"
+    assert db.total_alerts() == 0
+    operation = db.get_last_operation()
+    assert operation["approval_channel"] == "Mobile Simulator"
+    assert operation["approved_action"] == "rejected"
+    assert operation["approval_response_ms"] >= 0
+
+
+def test_chatops_vlan_approval_respects_trunk_guard(client, monkeypatch):
+    alert_id = _create_chatops_demo_alert(client)
+
+    def trunk_hunt(ip, record):
+        return {
+            "target_ip": ip,
+            "resolved_mac": record["host_mac"].lower(),
+            "switch_ip": record["switch_ip"],
+            "switch_hostname": record["switch_hostname"],
+            "port": record["port_interface"],
+            "port_type": "trunk",
+            "trunk_guard_override": True,
+            "warning": "⚠️ Trunk Port Detected — Auto-Switched to Surgical ACL to Prevent Uplink Outage",
+            "hunt_time_ms": 1.0,
+            "trace": [],
+            "hunt_cli": ["show ip arp 192.168.10.100"],
+        }
+
+    monkeypatch.setattr(containment, "hunt_ip_port", trunk_hunt)
+    response = client.post(
+        "/api/chatops/action",
+        json={
+            "alert_id": alert_id,
+            "action": "approve_vlan",
+            "channel": "Mobile Simulator",
+        },
+    )
+
+    assert response.status_code == 200
+    ticket = response.json()
+    assert ticket["containment_mode"] == "acl"
+    assert ticket["approved_action"] == "surgical_acl"
+    assert "ip access-group SENTRIX_ACL_192_168_10_100 in" in ticket["executed_cli"]
+    assert "shutdown" not in ticket["executed_cli"]
+    assert "Trunk Port Detected" in ticket["trunk_guard_warning"]
+
+
+def test_chatops_config_is_masked_and_runtime_update_is_not_returned(client):
+    before = client.get("/api/chatops/config").json()
+    assert "telegram_bot_token" not in before
+
+    updated = client.post(
+        "/api/chatops/config",
+        json={"telegram_bot_token": "123456:secret-token"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["configured"] is False
+    status = client.get("/api/chatops/config").json()
+    assert status["token_configured"] is True
+    assert status["chat_id_configured"] is False
+    assert "secret-token" not in json.dumps(status)
+
+
+def test_critical_alert_schedules_telegram_notification_with_trace(client, monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        main.containment,
+        "send_telegram_approval",
+        lambda payload: sent.append(payload),
+    )
+
+    response = client.post(
+        "/api/webhook/alert",
+        json={
+            "attacker_ip": "192.168.10.100",
+            "target_ip": "192.168.10.50",
+            "signature": "critical notification test",
+            "severity": 5,
+        },
+    )
+
+    assert response.status_code == 202
+    assert len(sent) == 1
+    assert sent[0]["approval_id"] == response.json()["alert_id"]
+    assert sent[0]["asset_name"] == "Production File Server"
+    assert sent[0]["approval_hunt"]["switch_hostname"] == "SW-CORE-CISCO-01"
+    assert sent[0]["approval_hunt"]["port"] == "Gi0/10"
+    assert sent[0]["severity"] == 5
+
+
+def test_telegram_notification_sends_all_three_callback_actions(monkeypatch):
+    monkeypatch.setitem(
+        containment._TELEGRAM_RUNTIME_CONFIG, "token", "123456:secret-token"
+    )
+    monkeypatch.setitem(
+        containment._TELEGRAM_RUNTIME_CONFIG, "chat_id", "987654321"
+    )
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+    def fake_post(url, **kwargs):
+        captured["url"] = url
+        captured["payload"] = kwargs["json"]
+        return FakeResponse()
+
+    monkeypatch.setattr(containment.httpx, "post", fake_post)
+    sent = containment.send_telegram_approval({
+        "approval_id": "a" * 32,
+        "attacker_ip": "192.168.10.100",
+        "asset_name": "Production File Server",
+        "severity": 4,
+        "approval_hunt": {
+            "switch_hostname": "SW-CORE-CISCO-01",
+            "port": "Gi0/10",
+            "port_type": "access",
+        },
+    })
+
+    assert sent is True
+    assert "secret-token" in captured["url"]
+    assert captured["payload"]["chat_id"] == "987654321"
+    buttons = captured["payload"]["reply_markup"]["inline_keyboard"]
+    assert buttons[0][0]["callback_data"] == f"approve_vlan:{'a' * 32}"
+    assert buttons[0][1]["callback_data"] == f"approve_acl:{'a' * 32}"
+    assert buttons[1][0]["callback_data"] == f"reject:{'a' * 32}"
+
+
 def test_mock_acl_containment_and_restore_leave_vlan_unchanged(client):
     response = client.post(
         "/api/webhook/alert",
@@ -175,6 +380,69 @@ def test_mock_acl_containment_and_restore_leave_vlan_unchanged(client):
     assert host["port_status"] == "SECURE"
     assert host["current_vlan"] == 10
     assert host["previous_description"] is None
+
+
+def test_ip_hunt_traces_uplink_hop_and_manual_trace_is_read_only(client):
+    response = client.post("/api/hunt/192.168.10.52")
+
+    assert response.status_code == 200
+    trace = response.json()
+    assert trace["resolved_mac"] == "00:1a:2b:3c:4d:52"
+    assert trace["switch_hostname"] == "SW-CORE-CISCO-01"
+    assert trace["port"] == "Gi0/2"
+    assert trace["port_type"] == "access"
+    assert trace["trunk_guard_override"] is False
+    assert "show ip arp 192.168.10.52" in trace["hunt_cli"]
+    assert "show interfaces Gi0/1 switchport" in trace["hunt_cli"]
+    assert "show cdp neighbors Gi0/1 detail" in trace["hunt_cli"]
+    assert "show mac address-table address 001a.2b3c.4d52" in trace["hunt_cli"]
+    assert "show mac address-table interface Gi0/2" in trace["hunt_cli"]
+    assert db.lookup_host("192.168.10.52")["port_status"] == "SECURE"
+
+    trunk_trace = client.post("/api/hunt/192.168.10.29").json()
+    assert trunk_trace["port_type"] == "trunk"
+    assert trunk_trace["trunk_guard_override"] is True
+    assert "show interfaces Gi0/29 switchport" in trunk_trace["hunt_cli"]
+
+
+def test_multi_mac_alert_automatically_uses_surgical_acl_and_audits_hunt(client):
+    response = client.post(
+        "/api/webhook/alert",
+        json={
+            "attacker_ip": "192.168.10.51",
+            "target_ip": "192.168.10.100",
+            "signature": "multi-MAC trunk guard test",
+            "severity": 2,
+            "containment_mode": "vlan",
+        },
+    )
+
+    assert response.status_code == 200
+    ticket = response.json()
+    commands = json.loads(ticket["executed_cli"])
+    assert ticket["containment_mode"] == "acl"
+    assert ticket["port_type"] == "multi-mac"
+    assert ticket["trunk_guard_warning"] == (
+        "⚠️ Trunk Port Detected — Auto-Switched to Surgical ACL to Prevent Uplink Outage"
+    )
+    assert ticket["hunt_time_ms"] >= 0
+    trace = json.loads(ticket["hunt_trace_json"])
+    assert trace["trunk_guard_override"] is True
+    assert "show mac address-table interface Et1" in trace["hunt_cli"]
+    assert "ip access-group SENTRIX_ACL_192_168_10_51 in" in commands
+    assert "shutdown" not in commands
+    assert db.lookup_host("192.168.10.51")["current_vlan"] == 10
+    audit = db.get_last_operation()
+    assert audit["result"] == "SUCCESS"
+    conn = db._connect()
+    try:
+        audit_steps = json.loads(conn.execute(
+            "SELECT steps_json FROM operation_log ORDER BY id DESC LIMIT 1"
+        ).fetchone()["steps_json"])
+    finally:
+        conn.close()
+    assert audit_steps[0]["step"] == "ip_to_port_hunt"
+    assert "show ip arp 192.168.10.51" in audit_steps[0]["commands"]
 
 
 def test_concurrent_host_claim_allows_only_one_operation(client):
@@ -254,6 +522,12 @@ def test_existing_demo_database_migrates_without_losing_ticket_timing(tmp_path, 
             '192.168.10.100', 'legacy demo', 2, 'SW-CORE-CISCO-01', 'cisco_ios',
             'Gi0/1', 99, 'Gi0/24', 17.5, '[]', 'CONTAINED'
         );
+        CREATE TABLE operation_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, completed_at TEXT NOT NULL,
+            action TEXT NOT NULL, host_ip TEXT NOT NULL, result TEXT NOT NULL,
+            message TEXT NOT NULL, execution_time_ms REAL NOT NULL DEFAULT 0,
+            steps_json TEXT NOT NULL DEFAULT '[]'
+        );
         """
     )
     conn.commit()
@@ -269,6 +543,19 @@ def test_existing_demo_database_migrates_without_losing_ticket_timing(tmp_path, 
     assert ticket["ticket_id"] == "SNTX-1001"
     assert ticket["execution_time_ms"] == 17.5
     assert ticket["span_destination"] == "Gi0/24"
+    assert ticket["hunt_trace_json"] == "[]"
+    assert ticket["hunt_time_ms"] == 0
+    conn = db._connect()
+    try:
+        columns = {
+            row["name"] for row in conn.execute("PRAGMA table_info(operation_log)")
+        }
+    finally:
+        conn.close()
+    assert {
+        "approval_channel", "approved_action",
+        "approval_response_ms", "executed_cli",
+    }.issubset(columns)
 
 
 def test_ticket_numbers_are_unique_across_concurrent_transactions(client):
@@ -449,6 +736,24 @@ def test_live_approval_requires_separate_token_and_proxy_identity(tmp_path, monk
             "steps": [],
         },
     )
+    monkeypatch.setattr(
+        containment,
+        "hunt_ip_port",
+        lambda ip, record: {
+            "target_ip": ip,
+            "resolved_mac": record["host_mac"].lower(),
+            "switch_ip": record["switch_ip"],
+            "switch_hostname": record["switch_hostname"],
+            "port": record["port_interface"],
+            "port_type": "access",
+            "trunk_guard_override": False,
+            "warning": "",
+            "hunt_time_ms": 1.0,
+            "trace": [],
+            "hunt_cli": [],
+            "root_switch_ip": record["switch_ip"],
+        },
+    )
     live_headers = {
         "X-SENTRIX-LIVE-TOKEN": live_token,
         "X-CONFIRM-LIVE-CHANGE": containment.CONFIRMATION_VALUE,
@@ -516,6 +821,62 @@ def test_live_rejects_non_lab_and_unsafe_configuration(tmp_path, monkeypatch):
     config_path.write_text(json.dumps(config), encoding="utf-8")
     with pytest.raises(containment.ConfigurationError, match="Invalid port_interface"):
         containment.load_lab_devices()
+
+
+def test_live_ip_hunt_checks_all_macs_on_the_final_access_port(tmp_path, monkeypatch):
+    monkeypatch.setenv("SENTRIX_MODE", "LIVE")
+    monkeypatch.setenv("SENTRIX_LAB_USERNAME", "lab-user")
+    monkeypatch.setenv("SENTRIX_LAB_PASSWORD", "test-only-password")
+    config = tmp_path / "hunt-lab.json"
+    config.write_text(json.dumps({
+        "devices": [{
+            "host_ip": "192.168.10.50",
+            "switch_ip": "192.168.1.2",
+            "vendor": "cisco_ios",
+            "port_interface": "Gi0/1",
+            "isolation_vlan": 999,
+            "restore_vlan": 10,
+        }]
+    }), encoding="utf-8")
+    monkeypatch.setenv("SENTRIX_LAB_CONFIG", str(config))
+    monkeypatch.setattr(db, "DB_PATH", str(tmp_path / "hunt-live.db"))
+    db.init_db()
+
+    class HuntConnection:
+        def __init__(self):
+            self.commands = []
+
+        def send_command(self, command, **kwargs):
+            self.commands.append(command)
+            if command == "show ip arp 192.168.10.50":
+                return "Internet 192.168.10.50 0 001a.2b3c.4d50 ARPA Vlan10"
+            if command == "show mac address-table address 001a.2b3c.4d50":
+                return "10 001a.2b3c.4d50 DYNAMIC Gi0/1"
+            if command == "show interfaces Gi0/1 switchport":
+                return "Administrative Mode: static access\nOperational Mode: static access"
+            if command == "show mac address-table interface Gi0/1":
+                return (
+                    "10 001a.2b3c.4d50 DYNAMIC Gi0/1\n"
+                    "10 00aa.bbcc.ddee DYNAMIC Gi0/1"
+                )
+            raise AssertionError(f"Unexpected hunt command: {command}")
+
+        def disconnect(self):
+            pass
+
+    connection = HuntConnection()
+    monkeypatch.setitem(
+        sys.modules, "netmiko",
+        SimpleNamespace(ConnectHandler=lambda **kwargs: connection),
+    )
+    trace = containment.hunt_ip_port(
+        "192.168.10.50", db.lookup_host("192.168.10.50")
+    )
+
+    assert trace["port_type"] == "multi-mac"
+    assert trace["trunk_guard_override"] is True
+    assert trace["hunt_time_ms"] >= 0
+    assert "show mac address-table interface Gi0/1" in connection.commands
 
 
 class FakeCiscoConnection:
