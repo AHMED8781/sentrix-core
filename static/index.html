@@ -3,9 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1220">
-  <title>SENTRIX | Lab operations</title>
+  <meta name="theme-color" content="#060a12">
+  <title>SENTRIX | Network Response Center</title>
   <link rel="icon" type="image/jpeg" href="/static/logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
@@ -221,22 +224,312 @@
     @media (max-width: 720px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .device-list { grid-template-columns: 1fr; } .clock { display: none; } .topbar { align-items: flex-start; } .top-actions { flex-wrap: wrap; justify-content: flex-end; } .hero-side { grid-template-columns: 1fr; } .workflow-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .workflow-step::after { display: none; } }
     @media (max-width: 460px) { .shell { padding-top: 18px; } .brand-subtitle { max-width: 175px; line-height: 1.4; } .topbar { gap: 8px; } .top-actions { gap: 7px; } .mode-pill { padding: 0 9px; } .intro { margin-top: 18px; padding: 20px 16px; } h1 { font-size: 32px; } .demo-console { padding: 13px; } .demo-controls { grid-template-columns: 1fr; } .demo-controls .button { width: 100%; } .demo-settings { grid-template-columns: 1fr; gap: 6px; } .quick-scenarios { display: grid; grid-template-columns: 1fr; } .quick-scenarios .button { justify-content: flex-start; } .workflow { padding: 14px 12px; } .workflow-steps { gap: 7px; } .workflow-step { grid-template-columns: 24px 1fr; gap: 6px; padding: 8px 6px; } .workflow-number { width: 23px; height: 23px; } .workflow-label { font-size: 10px; } .metrics { gap: 9px; } .metric { min-height: 106px; padding: 13px; } .metric-value { font-size: 24px; } footer { flex-direction: column; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+    :root {
+      color-scheme: dark;
+      font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+      background: #060a12;
+      color: #e8f0fc;
+      --panel: rgba(15, 23, 42, .78);
+      --panel-raised: rgba(22, 34, 57, .96);
+      --line: rgba(56, 189, 248, .16);
+      --muted: #91a1b9;
+      --cyan: #00e5ff;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    body {
+      position: relative;
+      min-width: 320px;
+      background:
+        radial-gradient(ellipse at 74% -14%, rgba(37, 99, 235, .2), transparent 38%),
+        radial-gradient(ellipse at 4% 34%, rgba(0, 229, 255, .055), transparent 35%),
+        linear-gradient(145deg, #060a12 0%, #0b1121 52%, #070b14 100%);
+      letter-spacing: -.012em;
+    }
+    body::before {
+      position: fixed;
+      z-index: 0;
+      inset: 0;
+      background-image: linear-gradient(rgba(67, 96, 133, .075) 1px, transparent 1px), linear-gradient(90deg, rgba(67, 96, 133, .075) 1px, transparent 1px);
+      background-size: 42px 42px;
+      content: "";
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .7), transparent 86%);
+      pointer-events: none;
+    }
+    .shell { position: relative; z-index: 1; max-width: 1640px; padding-top: 18px; }
+    .topbar {
+      position: sticky;
+      z-index: 10;
+      top: 0;
+      margin: 0 calc(clamp(16px, 3vw, 42px) * -1);
+      padding: 12px clamp(16px, 3vw, 42px);
+      border: 1px solid rgba(56, 189, 248, .12);
+      border-radius: 0 0 16px 16px;
+      background: rgba(6, 10, 18, .86);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, .24);
+      backdrop-filter: blur(18px);
+    }
+    .brand { gap: 12px; }
+    .logo {
+      width: 44px;
+      height: 44px;
+      border: 1px solid rgba(0, 229, 255, .42);
+      border-radius: 14px;
+      box-shadow: 0 0 22px rgba(0, 229, 255, .16), inset 0 0 14px rgba(0, 229, 255, .1);
+      filter: saturate(1.2);
+    }
+    .brand-name { font-size: 16px; font-weight: 800; letter-spacing: .19em; }
+    .brand-subtitle { max-width: 360px; color: #9eb0c8; font-size: 10px; letter-spacing: .035em; }
+    .top-actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .mode-pill, .clock, .button {
+      min-height: 36px;
+      border-color: rgba(121, 152, 193, .22);
+      border-radius: 9px;
+      background: rgba(15, 23, 42, .84);
+      color: #dce8f8;
+    }
+    .mode-pill { gap: 8px; border-color: rgba(16, 185, 129, .35); background: rgba(16, 185, 129, .09); color: #b7f7dc; font-size: 9px; letter-spacing: .12em; }
+    .mode-pill::after { color: #7ee9bc; content: "SIMULATION"; }
+    .mode-pill.live { border-color: rgba(245, 158, 11, .42); background: rgba(245, 158, 11, .1); color: #ffdfa2; }
+    .mode-pill.live::after { color: #ffcc72; content: "HARDWARE"; }
+    .mode-dot { width: 7px; height: 7px; background: var(--green); box-shadow: 0 0 0 4px rgba(16, 185, 129, .1), 0 0 14px rgba(16, 185, 129, .8); animation: status-pulse 2s ease-in-out infinite; }
+    .mode-pill.live .mode-dot { background: var(--amber); box-shadow: 0 0 0 4px rgba(245, 158, 11, .1), 0 0 14px rgba(245, 158, 11, .8); }
+    .clock { min-height: 35px; border-color: transparent; background: transparent; color: #b2c4dc; font: 10px var(--mono); }
+    .button { padding: 7px 11px; font-size: 11px; font-weight: 600; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease; }
+    .button:hover { transform: translateY(-1px); border-color: rgba(0, 229, 255, .46); background: rgba(22, 34, 57, .98); box-shadow: 0 8px 24px rgba(0, 0, 0, .24), 0 0 16px rgba(0, 229, 255, .07); }
+    .button:active { transform: translateY(0); }
+    .button.primary { border-color: rgba(0, 229, 255, .5); background: linear-gradient(135deg, rgba(8, 113, 145, .85), rgba(29, 78, 216, .78)); color: #e2fbff; box-shadow: 0 5px 20px rgba(0, 229, 255, .12); }
+    .button.primary:hover { background: linear-gradient(135deg, #087c99, #2859d8); box-shadow: 0 8px 26px rgba(0, 229, 255, .2); }
+    .button.restore { border-color: rgba(16, 185, 129, .42); background: rgba(16, 185, 129, .12); color: #a8f3d0; }
+    .button.secondary { border-color: rgba(37, 99, 235, .32); background: rgba(37, 99, 235, .1); }
+    .button.header-critical { border-color: rgba(239, 68, 68, .46); background: linear-gradient(135deg, rgba(127, 29, 29, .72), rgba(153, 27, 27, .42)); color: #ffd5d5; }
+    .button.header-critical::before { width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 10px rgba(239, 68, 68, .8); content: ""; }
+    .chatops-launcher { position: relative; right: auto; bottom: auto; z-index: auto; box-shadow: none; }
+    .chatops-launcher[aria-expanded="true"]::after { position: absolute; top: -4px; right: -4px; width: 9px; height: 9px; border: 2px solid #060a12; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px rgba(245, 158, 11, .8); content: ""; }
+    main { padding-top: 20px; }
+    .intro {
+      position: relative;
+      grid-template-columns: minmax(0, 1.1fr) minmax(355px, .9fr);
+      gap: 30px;
+      margin: 20px 0 14px;
+      padding: clamp(24px, 3vw, 38px);
+      overflow: hidden;
+      border-color: rgba(56, 189, 248, .2);
+      border-radius: 18px;
+      background: radial-gradient(ellipse at 80% 6%, rgba(0, 229, 255, .12), transparent 35%), linear-gradient(125deg, rgba(17, 30, 52, .94), rgba(10, 17, 31, .94));
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .3), inset 0 1px rgba(255, 255, 255, .025);
+      backdrop-filter: blur(14px);
+    }
+    .intro::after { position: absolute; right: -90px; bottom: -180px; width: 390px; height: 390px; border: 1px solid rgba(0, 229, 255, .09); border-radius: 50%; box-shadow: 0 0 0 32px rgba(0, 229, 255, .018), 0 0 0 76px rgba(0, 229, 255, .014); content: ""; pointer-events: none; }
+    .hero-kicker { color: var(--cyan); font-size: 9px; letter-spacing: .2em; }
+    .hero-kicker::before { width: 22px; height: 2px; box-shadow: 0 0 10px rgba(0, 229, 255, .8); }
+    h1 { margin-top: 14px; font-size: clamp(34px, 4vw, 50px); letter-spacing: -.055em; }
+    .intro p { color: #a8b8cd; font-size: 13px; }
+    .proof-chip { border-color: rgba(56, 189, 248, .17); background: rgba(5, 11, 21, .62); color: #c4d2e4; }
+    .proof-chip strong { color: var(--cyan); font: 10px var(--mono); }
+    .demo-mode-note { border-color: rgba(245, 158, 11, .28); border-radius: 10px; background: rgba(120, 74, 10, .12); color: #f3d28e; }
+    .demo-mode-note strong { color: #ffd47e; font-size: 9px; letter-spacing: .12em; }
+    .demo-console { border-color: rgba(56, 189, 248, .18); background: rgba(5, 10, 20, .58); box-shadow: inset 0 1px rgba(255, 255, 255, .025); }
+    .demo-console-title { font-size: 13px; }
+    .demo-step-count { border-color: rgba(0, 229, 255, .2); color: var(--cyan); font-family: var(--mono); }
+    .demo-console-copy { color: #9aaac0 !important; }
+    .demo-settings { border-color: rgba(56, 189, 248, .12); }
+    .mode-select, .trace-controls input { border-color: rgba(56, 189, 248, .18); background: #080e19; color: #e6f0ff; }
+    .quick-scenarios .button { background: rgba(18, 30, 49, .9); }
+    .workflow { border-color: var(--line); border-radius: 13px; background: rgba(11, 18, 33, .78); box-shadow: inset 0 1px rgba(255, 255, 255, .025); backdrop-filter: blur(12px); }
+    .workflow-title { color: #e9f2ff; font-size: 12px; }
+    .workflow-caption { color: #7f92ad; font-size: 9px; }
+    .workflow-step { border-color: rgba(56, 72, 101, .5); background: rgba(5, 10, 20, .66); }
+    .workflow-step.done { border-color: rgba(16, 185, 129, .36); background: rgba(16, 185, 129, .08); }
+    .workflow-step.active { border-color: rgba(0, 229, 255, .4); background: rgba(0, 229, 255, .055); box-shadow: 0 0 18px rgba(0, 229, 255, .06), inset 0 0 0 1px rgba(0, 229, 255, .08); }
+    .workflow-number { font-family: var(--mono); }
+    .workflow-step.active .workflow-number { border-color: rgba(0, 229, 255, .58); color: var(--cyan); box-shadow: 0 0 12px rgba(0, 229, 255, .12); }
+    .metrics { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    .metric, .panel, .device-card {
+      border-color: rgba(56, 189, 248, .15);
+      border-radius: 13px;
+      background: rgba(15, 23, 42, .78);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, .16), inset 0 1px rgba(255, 255, 255, .025);
+      backdrop-filter: blur(14px);
+    }
+    .metric { min-height: 108px; padding: 15px 17px; overflow: hidden; }
+    .metric::before { top: 17px; width: 2px; height: 28px; background: #2563eb; box-shadow: 0 0 11px rgba(37, 99, 235, .45); }
+    .metric.alert-metric::before { background: var(--cyan); box-shadow: 0 0 12px rgba(0, 229, 255, .65); }
+    .metric.approval-metric::before { background: var(--amber); box-shadow: 0 0 12px rgba(245, 158, 11, .55); }
+    .metric-label { color: #9eafc6; font-size: 10px; font-weight: 600; }
+    .metric-value { margin-top: 12px; font: 700 27px var(--mono); letter-spacing: -.06em; }
+    .metric-note { color: #7487a2; font-size: 9px; }
+    .layout { grid-template-columns: minmax(0, 1.55fr) minmax(300px, .72fr); gap: 16px; }
+    .column { gap: 16px; }
+    .panel { overflow: hidden; transition: border-color .2s ease, box-shadow .2s ease; }
+    .panel:hover { border-color: rgba(56, 189, 248, .24); box-shadow: 0 16px 36px rgba(0, 0, 0, .2), 0 0 22px rgba(0, 229, 255, .035); }
+    .panel-header { padding: 15px 17px; border-bottom-color: rgba(56, 189, 248, .12); background: rgba(255, 255, 255, .012); }
+    .panel-title { color: #e8f1fc; font-size: 12px; font-weight: 650; }
+    .panel-title .accent { width: 6px; height: 14px; border-radius: 4px; background: var(--cyan); box-shadow: 0 0 10px rgba(0, 229, 255, .45); }
+    .panel-body { padding: 16px; }
+    .subtle { color: #8294af; font-size: 10px; }
+    .device-list { gap: 10px; }
+    .device-card { padding: 14px; animation: appear .24s ease both; }
+    .device-card:hover { border-color: rgba(0, 229, 255, .3); background: rgba(17, 29, 50, .92); box-shadow: 0 12px 30px rgba(0, 0, 0, .26), 0 0 22px rgba(0, 229, 255, .045); }
+    .device-name { color: #edf5ff; font-size: 12px; font-weight: 650; }
+    .device-address, .detail-value, .switch-meta, .switch-count, .topology-ip, .topology-port, .activity-meta, .ticket-id, .trace-node, .demo-step-count, .clock, .phone-status, #hunt-ip { font-family: var(--mono); }
+    .device-address { color: #95a8c3; font-size: 10px; }
+    .badge { padding: 4px 8px; border-color: rgba(145, 161, 185, .2); background: rgba(145, 161, 185, .06); color: #9eafc6; font-size: 9px; font-weight: 650; letter-spacing: .03em; }
+    .badge.secure { border-color: rgba(16, 185, 129, .32); background: rgba(16, 185, 129, .1); color: #66e4b0; }
+    .badge.isolated { border-color: rgba(239, 68, 68, .34); background: rgba(239, 68, 68, .12); color: #ff9292; box-shadow: 0 0 14px rgba(239, 68, 68, .06); }
+    .badge.review { border-color: rgba(245, 158, 11, .34); background: rgba(245, 158, 11, .11); color: #ffd17a; animation: status-pulse 2.4s ease-in-out infinite; }
+    .device-details { gap: 9px; margin: 13px 0; padding: 11px 0; border-color: rgba(56, 189, 248, .11); }
+    .detail-label { color: #7185a1; font-size: 9px; letter-spacing: .1em; }
+    .detail-value { color: #d9e7f8; font-size: 11px; }
+    .device-role { color: #92a4bd; font-size: 10px; }
+    .device-footer { align-items: flex-start; }
+    .device-actions, .approval-actions { gap: 5px; }
+    .device-footer .button, .approval-actions .button { min-height: 30px; padding: 5px 8px; font-size: 9px; }
+    .topology-switch { border-color: rgba(0, 229, 255, .2); background: rgba(0, 229, 255, .055); }
+    .topology-switch::before, .topology-group::before, .topology-host::before { background: rgba(0, 229, 255, .35); }
+    .switch-name { color: #dcecff; }
+    .switch-meta { color: #89a0bd; }
+    .switch-count { color: var(--cyan); }
+    .topology-host { border-color: rgba(65, 83, 112, .35); background: rgba(5, 10, 20, .5); }
+    .topology-dot { background: var(--green); box-shadow: 0 0 9px rgba(16, 185, 129, .6); }
+    .topology-host.isolated .topology-dot { background: var(--red); box-shadow: 0 0 9px rgba(239, 68, 68, .65); }
+    .topology-host.pending .topology-dot { background: var(--amber); box-shadow: 0 0 9px rgba(245, 158, 11, .65); }
+    .topology-ip { color: #d4e4f8; }
+    .topology-legend { border-top-color: rgba(56, 189, 248, .1); color: #8d9fb9; }
+    .topology-disclaimer { color: #71839e; }
+    .trace-controls { gap: 7px; }
+    .trace-controls input { min-height: 40px; font-size: 11px; }
+    .trace-controls input::placeholder { color: #61728b; }
+    .trace-path { gap: 7px; margin: 12px 0; }
+    .trace-node { border-color: rgba(0, 229, 255, .24); background: rgba(0, 229, 255, .055); color: #d9faff; font-size: 9px; }
+    .trace-arrow { color: var(--cyan); text-shadow: 0 0 10px rgba(0, 229, 255, .6); }
+    .trace-warning { border-color: rgba(168, 85, 247, .48); background: linear-gradient(110deg, rgba(120, 53, 15, .26), rgba(88, 28, 135, .2)); color: #ffd68a; box-shadow: inset 3px 0 var(--amber); font-size: 10px; }
+    .trace-result { color: #8fa3bf; font: 9px var(--mono); }
+    .operation { gap: 11px; }
+    .operation-row { font-size: 10px; }
+    .operation-row span:first-child { color: #8294ae; }
+    .operation-row span:last-child { color: #dce8f8; font-family: var(--mono); font-size: 9px; }
+    .operation-message { color: #8fa2bd; font-size: 10px; }
+    .activity-item { border-bottom-color: rgba(56, 189, 248, .1); }
+    .activity-title { color: #dce9f8; font-size: 10px; }
+    .activity-meta { color: #8498b3; font-size: 9px; }
+    .activity-time { color: #71839f; font: 9px var(--mono); }
+    .table-wrap { background: rgba(3, 7, 18, .4); }
+    table { min-width: 800px; }
+    th { padding: 10px 13px; border-top: 0; background: rgba(8, 14, 25, .92); color: #7f93ae; font-size: 9px; letter-spacing: .12em; }
+    td { padding: 12px 13px; border-top-color: rgba(56, 189, 248, .1); color: #cfdded; font-size: 10px; }
+    td:nth-child(2), td:nth-child(5), td:nth-child(6) { font-family: var(--mono); font-size: 9px; }
+    .ticket-id { color: var(--cyan); font-size: 10px; }
+    .signature { color: #d2e0f0; }
+    .cli-view summary { color: var(--cyan); font-size: 9px; font-weight: 600; }
+    .cli-view pre { border-color: rgba(56, 189, 248, .16); background: #030712; color: #70e7c2; font: 9px/1.65 var(--mono); }
+    .channel-badge { border-color: rgba(168, 85, 247, .34); background: rgba(168, 85, 247, .1); color: #d8b4fe; font: 8px var(--mono); }
+    .empty, .loading, .error-state { color: #8294af; }
+    .skeleton { background: linear-gradient(90deg, #111b2d, #1d2c44, #111b2d); background-size: 200% 100%; }
+    .chatops-drawer {
+      z-index: 20;
+      right: 22px;
+      bottom: 22px;
+      max-height: min(820px, calc(100vh - 44px));
+      border-color: rgba(56, 189, 248, .26);
+      border-radius: 23px;
+      background: rgba(7, 12, 22, .97);
+      box-shadow: 0 32px 100px rgba(0, 0, 0, .72), 0 0 36px rgba(0, 229, 255, .07);
+      backdrop-filter: blur(22px);
+    }
+    .chatops-head { padding: 12px 15px; border-bottom-color: rgba(56, 189, 248, .13); }
+    .chatops-head strong { font-size: 11px; letter-spacing: .03em; }
+    .chatops-content { padding: 13px; }
+    .phone-frame { max-width: 330px; padding: 9px; border-color: #3c4659; border-radius: 31px; background: linear-gradient(145deg, #1b2432, #05080e 32%); box-shadow: inset 0 0 0 1px #000, 0 18px 44px rgba(0, 0, 0, .35); }
+    .phone-screen { position: relative; min-height: 280px; padding: 9px 11px 14px; overflow: hidden; border-radius: 23px; background: linear-gradient(165deg, #111a29, #090e18 72%); }
+    .phone-island { position: relative; z-index: 1; width: 76px; height: 17px; margin: 0 auto 7px; border: 1px solid #1e2735; border-radius: 999px; background: #03050a; box-shadow: inset 0 1px 3px #000; }
+    .phone-island::after { position: absolute; top: 5px; right: 13px; width: 6px; height: 6px; border-radius: 50%; background: #111d31; box-shadow: 0 0 4px #16345d; content: ""; }
+    .phone-status { margin-bottom: 10px; color: #dce6f5; font-size: 8px; }
+    .telegram-topbar { display: flex; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid rgba(145, 161, 185, .12); }
+    .telegram-avatar { display: grid; flex: 0 0 28px; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(145deg, #00a7c7, #2563eb); color: #fff; font-size: 12px; font-weight: 800; box-shadow: 0 0 12px rgba(0, 229, 255, .16); }
+    .telegram-topbar strong, .telegram-topbar span { display: block; }
+    .telegram-topbar strong { color: #f0f5fc; font-size: 9px; }
+    .telegram-topbar div span { margin-top: 2px; color: #7f91ac; font-size: 7px; }
+    .telegram-topbar .telegram-presence { margin-left: auto; color: #6bd8b2; font: 7px var(--mono); letter-spacing: .08em; }
+    .telegram-brand { margin: 9px 0; color: #63cff0; font-size: 8px; letter-spacing: .1em; }
+    .chat-alert { border-color: rgba(56, 189, 248, .13); border-radius: 4px 12px 12px 12px; background: #172436; box-shadow: 0 5px 16px rgba(0, 0, 0, .16); }
+    .chat-alert-title { color: #fff; font-size: 10px; }
+    .chat-alert-copy { color: #b8c7d9; font-size: 9px; }
+    .chat-buttons { gap: 5px; }
+    .chat-buttons .button { min-height: 34px; border-color: rgba(56, 189, 248, .18); border-radius: 7px; background: rgba(37, 99, 235, .1); color: #d9efff; font-size: 9px; }
+    .chat-buttons .button.restore { border-color: rgba(16, 185, 129, .3); background: rgba(16, 185, 129, .1); color: #9af0c6; }
+    .chat-buttons .button:last-child { border-color: rgba(239, 68, 68, .25); background: rgba(239, 68, 68, .08); color: #ffaaaa; }
+    .chatops-empty { padding: 22px 10px; color: #8294af; font-size: 9px; }
+    .chatops-config { gap: 8px; margin-top: 12px; padding-top: 10px; border-top-color: rgba(56, 189, 248, .13); }
+    .chatops-config summary { color: #aabbd1; cursor: pointer; font-size: 9px; font-weight: 650; }
+    .chatops-config[open] summary { margin-bottom: 3px; color: var(--cyan); }
+    .chatops-config input { border-color: rgba(56, 189, 248, .17); background: #080e19; color: #eef6ff; font-size: 9px; }
+    .chatops-config-status { color: #8ea1bc; font-size: 9px; }
+    .toast { z-index: 30; border-color: rgba(56, 189, 248, .3); background: rgba(13, 24, 42, .97); color: #e9f5ff; }
+    dialog { border-color: rgba(56, 189, 248, .3); background: rgba(10, 17, 31, .98); backdrop-filter: blur(18px); }
+    .dialog-content h2 { font-size: 16px; }
+    .dialog-content p, .dialog-content label { color: #a6b6cc; }
+    .dialog-content input[type=password], .dialog-content input[type=text] { border-color: rgba(56, 189, 248, .19); background: #060b14; color: #eef6ff; font-family: var(--mono); font-size: 11px; }
+    .confirm-check input { accent-color: var(--cyan); }
+    footer { position: relative; z-index: 1; border-top-color: rgba(56, 189, 248, .12); color: #71839e; font-size: 9px; }
+    @keyframes status-pulse { 50% { opacity: .68; box-shadow: 0 0 0 6px rgba(16, 185, 129, .045), 0 0 15px currentColor; } }
+    @media (max-width: 1120px) {
+      .topbar { align-items: flex-start; }
+      .top-actions { max-width: 610px; }
+      .layout { grid-template-columns: minmax(0, 1fr); }
+      .layout > aside { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+      .layout > aside .panel:last-child { grid-column: 1 / -1; }
+    }
+    @media (max-width: 760px) {
+      .shell { padding-top: 10px; }
+      .topbar { position: relative; margin-inline: -16px; padding: 10px 16px; border-radius: 0 0 14px 14px; }
+      .top-actions { gap: 6px; }
+      .top-actions .button { min-height: 33px; padding: 6px 8px; font-size: 9px; }
+      .intro { grid-template-columns: 1fr; gap: 18px; }
+      .hero-side { grid-template-columns: 1fr; }
+      .layout > aside { grid-template-columns: 1fr; }
+      .layout > aside .panel:last-child { grid-column: auto; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 500px) {
+      .brand-subtitle { max-width: 210px; font-size: 8px; }
+      .topbar { flex-direction: column; gap: 9px; }
+      .top-actions { width: 100%; justify-content: flex-start; }
+      .mode-pill { min-height: 32px; }
+      .intro { padding: 20px 16px; }
+      h1 { font-size: 34px; }
+      .workflow-head { align-items: flex-start; flex-direction: column; gap: 5px; }
+      .metrics { gap: 8px; }
+      .metric { min-height: 101px; padding: 12px; }
+      .metric-value { font-size: 22px; }
+      .device-list { grid-template-columns: 1fr; }
+      .device-footer { flex-direction: column; }
+      .device-actions { justify-content: flex-start; }
+      .chatops-drawer { right: 8px; bottom: 8px; width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
+      .chatops-content { padding: 9px; }
+      .phone-frame { max-width: 100%; }
+    }
   </style>
 </head>
 <body>
   <div class="shell">
     <header class="topbar">
       <div class="brand">
-        <img class="logo" src="/static/logo.jpg" alt="">
+        <img class="logo" src="/static/logo.jpg" alt="SENTRIX shield">
         <div>
           <p class="brand-name">SENTRIX</p>
-          <p class="brand-subtitle">Authorized lab operations</p>
+          <p class="brand-subtitle">Autonomous Network Containment &amp; Response</p>
         </div>
       </div>
       <div class="top-actions">
         <div id="mode-pill" class="mode-pill" aria-label="Application mode">
           <span class="mode-dot" aria-hidden="true"></span><span id="mode-label">Loading mode</span>
         </div>
+        <button class="button primary header-critical" type="button" id="critical-alert-button">Critical alert simulation</button>
+        <button class="button primary chatops-launcher" id="chatops-launcher" type="button" aria-expanded="false">📱 ChatOps Mobile</button>
         <div class="clock" id="clock" aria-label="Local time"></div>
         <button class="button" type="button" id="refresh-button">Refresh</button>
       </div>
@@ -245,9 +538,9 @@
     <main>
       <section class="intro" aria-labelledby="page-title">
         <div class="hero-copy">
-          <div class="hero-kicker">Network threat response center</div>
-          <h1 id="page-title">See the response.<br>Trust the outcome.</h1>
-          <p>Follow a network alert from host discovery to human approval and verified containment—built for a controlled GNS3 lab.</p>
+          <div class="hero-kicker">SOC // Network defense</div>
+          <h1 id="page-title">Detect fast.<br>Contain with confidence.</h1>
+          <p>One command center for endpoint discovery, analyst approval, and verified network containment in your authorized GNS3 lab.</p>
           <div class="hero-proof" aria-label="Response capabilities">
             <span class="proof-chip"><strong>01</strong> Discover</span>
             <span class="proof-chip"><strong>02</strong> Approve</span>
@@ -282,7 +575,6 @@
             <div class="quick-scenarios" aria-label="Quick demonstration scenarios">
               <button class="button" type="button" id="test-alert-button">Quick test alert</button>
               <button class="button" type="button" id="unknown-host-button">Unknown host</button>
-              <button class="button" type="button" id="critical-alert-button">Critical server</button>
             </div>
           </div>
         </div>
@@ -302,18 +594,18 @@
       </section>
 
       <section class="metrics" aria-label="System summary" aria-live="polite">
-        <article class="metric alert-metric"><div class="metric-label">Recorded alerts <span aria-hidden="true">↗</span></div><div class="metric-value" id="metric-alerts">—</div><div class="metric-note">Tickets saved in this lab database</div></article>
-        <article class="metric"><div class="metric-label">Isolated ports <span aria-hidden="true">◇</span></div><div class="metric-value" id="metric-isolated">—</div><div class="metric-note">Containment requires verified restore</div></article>
-        <article class="metric approval-metric"><div class="metric-label">Pending approvals <span aria-hidden="true">!</span></div><div class="metric-value" id="metric-approvals">—</div><div class="metric-note">Critical assets awaiting a decision</div></article>
-        <article class="metric"><div class="metric-label">SPAN sessions <span aria-hidden="true">⌁</span></div><div class="metric-value" id="metric-span">—</div><div class="metric-note">Sessions currently recorded active</div></article>
-        <article class="metric"><div class="metric-label">Switches in inventory <span aria-hidden="true">▦</span></div><div class="metric-value" id="metric-switches">—</div><div class="metric-note">Distinct switches represented</div></article>
+        <article class="metric alert-metric"><div class="metric-label">Total alert records <span aria-hidden="true">↗</span></div><div class="metric-value" id="metric-alerts">—</div><div class="metric-note">Tickets persisted in this lab database</div></article>
+        <article class="metric"><div class="metric-label">Active quarantines <span aria-hidden="true">◇</span></div><div class="metric-value" id="metric-isolated">—</div><div class="metric-note">Verified containment awaiting restore</div></article>
+        <article class="metric approval-metric"><div class="metric-label">Critical approvals <span aria-hidden="true">!</span></div><div class="metric-value" id="metric-approvals">—</div><div class="metric-note">High-value assets awaiting a decision</div></article>
+        <article class="metric"><div class="metric-label">SPAN sessions <span aria-hidden="true">⌁</span></div><div class="metric-value" id="metric-span">—</div><div class="metric-note">Active sessions · mean response in tooltip</div></article>
+        <article class="metric"><div class="metric-label">Monitored switches <span aria-hidden="true">▦</span></div><div class="metric-value" id="metric-switches">—</div><div class="metric-note">Distinct switches represented</div></article>
       </section>
 
       <div class="layout">
         <div class="column">
           <section class="panel" aria-labelledby="inventory-title">
             <div class="panel-header">
-              <h2 class="panel-title" id="inventory-title"><span class="accent"></span>Device inventory</h2>
+              <h2 class="panel-title" id="inventory-title"><span class="accent"></span>Endpoint &amp; switch inventory</h2>
               <span class="subtle" id="inventory-count">Loading…</span>
             </div>
             <div class="panel-body"><div id="device-list" class="device-list"><div class="loading">Loading inventory…<span class="skeleton" style="width:60%"></span></div></div></div>
@@ -321,7 +613,7 @@
 
           <section class="panel" aria-labelledby="tickets-title">
             <div class="panel-header">
-              <h2 class="panel-title" id="tickets-title"><span class="accent"></span>Alert and ticket history</h2>
+              <h2 class="panel-title" id="tickets-title"><span class="accent"></span>Incident queue &amp; audit trail</h2>
               <span class="subtle" id="ticket-count">0 tickets</span>
             </div>
             <div class="table-wrap">
@@ -350,7 +642,7 @@
             </div>
           </section>
           <section class="panel" aria-labelledby="hunt-title">
-            <div class="panel-header"><h2 class="panel-title" id="hunt-title"><span class="accent"></span>IP-to-Port Trace</h2></div>
+            <div class="panel-header"><h2 class="panel-title" id="hunt-title"><span class="accent"></span>IP-to-Port Hunter</h2><span class="subtle">Smart Trunk Guard</span></div>
             <div class="panel-body">
               <form class="trace-controls" id="hunt-form">
                 <input id="hunt-ip" name="ip" type="text" inputmode="decimal" placeholder="Private IPv4 address" aria-label="IP address to trace" required>
@@ -380,22 +672,24 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <button class="button primary chatops-launcher" id="chatops-launcher" type="button" aria-expanded="false">📱 ChatOps</button>
   <section class="chatops-drawer" id="chatops-drawer" aria-label="ChatOps mobile simulator" hidden>
     <div class="chatops-head"><strong>📱 ChatOps Mobile Alert</strong><button class="button" id="chatops-close" type="button" aria-label="Close mobile simulator">×</button></div>
     <div class="chatops-content">
       <div class="phone-frame"><div class="phone-screen">
+        <div class="phone-island" aria-hidden="true"></div>
         <div class="phone-status"><span id="phone-clock">--:--</span><span>●●●  Wi-Fi  100%</span></div>
-        <p class="telegram-brand">TELEGRAM · SENTRIX RESPONSE BOT</p>
+        <div class="telegram-topbar"><span class="telegram-avatar" aria-hidden="true">S</span><div><strong>SENTRIX Response Bot</strong><span>secure lab approvals</span></div><span class="telegram-presence">BOT</span></div>
+        <p class="telegram-brand">TELEGRAM · INCIDENT RESPONSE</p>
         <div id="chatops-alerts"><div class="chatops-empty">No critical asset is waiting for approval.</div></div>
       </div></div>
-      <div class="chatops-config">
+      <details class="chatops-config">
+        <summary>Telegram bot configuration</summary>
         <div class="chatops-config-status" id="telegram-config-status">Checking Telegram configuration…</div>
         <input id="telegram-bot-token" type="password" autocomplete="off" placeholder="Telegram bot token (kept in memory only)" aria-label="Telegram bot token">
         <input id="telegram-chat-id" type="text" autocomplete="off" placeholder="Admin Telegram chat ID" aria-label="Telegram admin chat ID">
         <button class="button" id="telegram-config-save" type="button">Save Telegram settings</button>
         <button class="button" id="chatops-demo-test" type="button">Send demo critical alert</button>
-      </div>
+      </details>
     </div>
   </section>
   <dialog id="change-dialog" aria-labelledby="dialog-title">
