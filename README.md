@@ -43,6 +43,12 @@ The repository includes a Render Blueprint at `render.yaml`. Open the [Render de
 This Blueprint pins `SENTRIX_MODE=MOCK`; do not change it to LIVE for a public service. The demo has no user authentication, so anyone with its URL can view the inventory and create simulated alerts. Its SQLite database is stored on the ephemeral filesystem and may be reset when Render restarts or redeploys the free service. Never add switch credentials, live-change tokens, approval tokens, or a real `lab-config.json` to this public deployment.
 The public MOCK demo also exposes runtime ChatOps configuration without authentication. Do not configure a real Telegram bot or send sensitive operational details through a publicly reachable instance.
 
+## Publish a public MOCK demo on Vercel Hobby
+
+The application can be imported from GitHub as a FastAPI project on Vercel Hobby for personal, non-commercial demos. In Vercel, create a project from `AHMED8781/sentrix-core`, keep the repository root as the project root, and deploy with the Hobby plan. Vercel detects `main.py` and `requirements.txt`; `vercel.json` excludes local databases, secrets, and tests from the function bundle.
+
+The Vercel deployment is deliberately MOCK-only: `LIVE` mode fails startup there, and the Telegram long-poll worker is disabled because serverless functions do not guarantee a persistent background process. SQLite uses `/tmp/sentrix.db` by default, which is temporary and can reset when the function restarts or scales to another instance. The in-dashboard ChatOps simulator remains available, but Telegram polling and durable ticket history are not guaranteed. Do not add real bot credentials or live-device secrets. Vercel Hobby has usage limits and is for personal, non-commercial use; check the current plan limits before sharing the demo widely.
+
 ## Prepare an isolated GNS3 lab
 
 1. Use a disposable GNS3 project and switch images with console access and a recoverable startup configuration. Snapshot the project and confirm out-of-band recovery before enabling LIVE.

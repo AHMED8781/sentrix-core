@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <title>SENTRIX | Static Project Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b1220;
+      color: #e5edf8;
+      --panel: #111b2b;
+      --panel-raised: #152238;
+      --line: #25354c;
+      --muted: #9aaac0;
+      --cyan: #67d9e8;
+      --green: #63d3a0;
+      --amber: #f1c778;
+      --red: #fb8e95;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: radial-gradient(ellipse at 70% -20%, #18314b 0, transparent 44%), #0b1220; }
+    button { font: inherit; }
+    button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+    .app { min-height: 100vh; }
+    .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 3; display: flex; flex-direction: column; width: 250px; padding: 22px 15px; border-right: 1px solid var(--line); background: #0c1421; }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 24px; }
+    .brand-mark { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #337187; border-radius: 12px; background: #102532; color: var(--cyan); }
+    .brand-mark svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .brand h1 { margin: 0; color: #f5f8fc; font-size: 15px; letter-spacing: .14em; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
+    .nav-label { padding: 0 10px; color: #71839a; font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    .nav { display: grid; gap: 5px; margin-top: 11px; }
+    .nav button { position: relative; display: flex; align-items: center; gap: 11px; min-height: 43px; padding: 0 12px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #a9b8ca; text-align: left; cursor: pointer; transition: .18s ease; }
+    .nav button:hover { border-color: #263d54; background: #111e2e; color: #eaf5fb; }
+    .nav button.active { border-color: #244e5e; background: linear-gradient(90deg, #12313b, #101e2c); color: #b8f2f5; }
+    .nav button.active::before { position: absolute; inset: 9px auto 9px -16px; width: 2px; border-radius: 2px; background: var(--cyan); content: ""; }
+    .nav svg { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+    .nav span { font-size: 11px; font-weight: 600; }
+    .sidebar-foot { margin-top: auto; padding: 14px 10px 0; border-top: 1px solid #1e2c3e; color: #8799ad; font-size: 10px; line-height: 1.6; }
+    .sidebar-foot strong { color: #b7c8d8; font-weight: 600; }
+    .workspace { min-height: 100vh; margin-left: 250px; }
+    .topbar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 68px; padding: 10px 28px; border-bottom: 1px solid var(--line); background: #0b1220eF; backdrop-filter: blur(14px); }
+    .crumb { color: #8496ac; font-size: 10px; }
+    .page-title { margin: 3px 0 0; color: #f3f7fd; font-size: 17px; font-weight: 650; }
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .mode, .clock { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: #c8d6e5; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .mode-dot, .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 9px #63d3a055; }
+    .clock { color: var(--muted); }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: #cfdeed; font-size: 10px; font-weight: 600; }
+    .button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+    .button.alert { border-color: #75434b; background: #2a1c27; color: #ffc0c3; cursor: pointer; }
+    .button[disabled] { cursor: not-allowed; opacity: .56; }
+    .preview-banner { display: flex; align-items: center; gap: 9px; margin: 22px 28px 0; padding: 10px 13px; border: 1px solid #6b5633; border-radius: 9px; background: #30271999; color: #f0d39a; font-size: 10px; line-height: 1.45; }
+    .preview-banner svg { width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+    main { padding: 22px 28px 38px; }
+    .view { display: none; animation: enter .24s ease both; }
+    .view.active { display: block; }
+    @keyframes enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    .view-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .view-heading h2 { margin: 0; color: #f3f7fd; font-size: 19px; letter-spacing: -.02em; }
+    .view-heading p { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .eyebrow { color: var(--cyan); font-size: 9px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+    .metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 17px; }
+    .metric, .panel { border: 1px solid var(--line); border-radius: 11px; background: linear-gradient(150deg, #121d2e, #101827); }
+    .metric { min-height: 90px; padding: 13px 14px; }
+    .metric-label { color: var(--muted); font-size: 10px; }
+    .metric-value { margin-top: 8px; color: #f7f9fc; font-size: 23px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .metric-note { margin-top: 3px; color: #8fa0b4; font-size: 9px; }
+    .grid-2 { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(250px, .75fr); gap: 13px; align-items: start; }
+    .stack { display: grid; gap: 13px; }
+    .panel { overflow: hidden; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 15px; border-bottom: 1px solid var(--line); }
+    .panel-head h3 { margin: 0; color: #edf3fa; font-size: 12px; font-weight: 650; }
+    .panel-body { padding: 14px 15px; }
+    .tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border: 1px solid #28684f; border-radius: 999px; background: #123126; color: #a7e8c7; font: 9px ui-monospace, SFMono-Regular, Consolas, monospace; text-transform: uppercase; }
+    .tag .dot { width: 5px; height: 5px; }
+    .tag.warn { border-color: #6b5633; background: #302719; color: #f1d18f; }
+    .tag.warn .dot { background: var(--amber); box-shadow: 0 0 8px #f1c77855; }
+    .tag.danger { border-color: #783b47; background: #351e29; color: #ffafb5; }
+    .tag.danger .dot { background: var(--red); box-shadow: 0 0 8px #fb8e9555; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 610px; text-align: left; }
+    th { padding: 9px 12px; color: #8293aa; background: #101927; font-size: 9px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; }
+    td { padding: 11px 12px; border-top: 1px solid #223147; color: #d8e4f2; font-size: 10px; vertical-align: middle; }
+    .mono { color: #a9c2d8; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .muted { color: var(--muted); }
+    .activity { display: grid; gap: 0; }
+    .activity-row { display: grid; grid-template-columns: 7px 1fr auto; align-items: start; gap: 9px; padding: 10px 0; border-bottom: 1px solid #213047; }
+    .activity-row:last-child { padding-bottom: 0; border-bottom: 0; }
+    .activity-row .dot { margin-top: 4px; }
+    .activity-title { color: #e6edf6; font-size: 10px; }
+    .activity-meta { margin-top: 4px; color: #8799ad; font: 9px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .activity-time { color: #8798ae; font-size: 9px; white-space: nowrap; }
+    .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 18px 0; }
+    .flow-step { position: relative; padding: 15px; border: 1px solid #2f4d63; border-radius: 10px; background: #102130; }
+    .flow-step:not(:last-child)::after { position: absolute; top: 50%; left: calc(100% + 1px); width: 9px; height: 1px; background: #438396; content: ""; }
+    .flow-step b { display: block; margin-top: 10px; color: #d7eff4; font-size: 11px; }
+    .flow-step small { display: block; margin-top: 5px; color: #9aacc0; font: 9px ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; }
+    .flow-icon { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #356377; border-radius: 8px; color: var(--cyan); }
+    .flow-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+    .notice { padding: 12px 14px; border: 1px solid #6b5633; border-radius: 9px; background: #30271999; color: #eed29b; font-size: 10px; line-height: 1.55; }
+    .notice strong { color: #ffe4ab; }
+    .form-row { display: flex; gap: 8px; margin: 14px 0; }
+    .fake-input { flex: 1; min-height: 36px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #0b1220; color: #899bb0; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .terminal { overflow: hidden; border: 1px solid #26384d; border-radius: 10px; background: #080e17; }
+    .terminal-head { display: flex; align-items: center; gap: 5px; padding: 9px 12px; border-bottom: 1px solid #202f42; color: #8ea1b6; font: 9px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .terminal-dot { width: 7px; height: 7px; border-radius: 50%; background: #f17373; }
+    .terminal-dot:nth-child(2) { background: #f0c16d; }
+    .terminal-dot:nth-child(3) { background: #67ce94; }
+    .terminal-title { margin-left: 6px; }
+    pre { overflow-x: auto; margin: 0; padding: 13px; color: #b6d2e8; font: 10px/1.7 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .setting-row { display: grid; grid-template-columns: minmax(160px, .7fr) minmax(0, 1fr); gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid #223147; }
+    .setting-row:last-child { border-bottom: 0; }
+    .setting-label { color: #dce7f3; font-size: 10px; }
+    .setting-help { margin-top: 4px; color: #8799ad; font-size: 9px; line-height: 1.4; }
+    .placeholder { padding: 8px 10px; border: 1px solid #29394e; border-radius: 7px; background: #0b1220; color: #788ba1; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .toast { position: fixed; right: 22px; bottom: 20px; z-index: 5; max-width: 310px; padding: 12px 15px; border: 1px solid #6b5633; border-radius: 10px; background: #211d18; color: #f2d69f; font-size: 11px; line-height: 1.5; box-shadow: 0 12px 35px #0008; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s ease; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    footer { padding: 15px 28px 25px; color: #71839a; font-size: 9px; text-align: center; }
+    @media (max-width: 980px) {
+      .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid-2 { grid-template-columns: 1fr; }
+      .sidebar { width: 210px; }
+      .workspace { margin-left: 210px; }
+      .topbar, main { padding-right: 18px; padding-left: 18px; }
+      .preview-banner { margin-right: 18px; margin-left: 18px; }
+    }
+    @media (max-width: 680px) {
+      .sidebar { position: static; width: auto; padding: 12px 14px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .brand { padding: 0 3px 10px; }
+      .nav-label, .sidebar-foot { display: none; }
+      .nav { display: flex; overflow-x: auto; gap: 5px; margin: 0; padding: 2px 0; }
+      .nav button { flex: 0 0 auto; min-height: 36px; padding: 0 9px; }
+      .nav button.active::before { inset: auto 9px -3px; width: auto; height: 2px; }
+      .nav button span { font-size: 9px; }
+      .workspace { margin-left: 0; }
+      .topbar { position: static; align-items: flex-start; padding: 13px 14px; }
+      .page-title { font-size: 14px; }
+      .top-actions { flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+      .clock { display: none; }
+      .button.alert { min-height: 30px; padding: 0 7px; font-size: 9px; }
+      .preview-banner { margin: 12px 12px 0; }
+      main { padding: 17px 12px 26px; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+      .metric { min-height: 78px; padding: 10px; }
+      .metric-value { font-size: 20px; }
+      .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow-step:nth-child(2)::after { display: none; }
+      .setting-row { grid-template-columns: 1fr; gap: 7px; }
+      footer { padding-right: 14px; padding-left: 14px; }
+    }
+    @media print {
+      .sidebar { position: absolute; }
+      .topbar { position: static; }
+      .preview-banner { print-color-adjust: exact; }
+      .view { display: block !important; break-inside: avoid; margin-bottom: 20px; }
+      .button, .toast { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3 19 6v5.2c0 4.1-2.8 7.4-7 9.3-4.2-1.9-7-5.2-7-9.3V6l7-3Z"></path><path d="M8.5 12h7M12 8.5v7"></path></svg>
+        </div>
+        <div><h1>SENTRIX</h1><p>NETWORK RESPONSE CENTER</p></div>
+      </div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav" aria-label="Preview sections">
+        <button class="active" type="button" data-view="overview" aria-current="page">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="11" width="7" height="10" rx="1.5"></rect><rect x="3" y="14" width="8" height="7" rx="1.5"></rect></svg><span>Overview</span>
+        </button>
+        <button type="button" data-view="hunter">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5M8 11h5.5M10.75 8.25v5.5"></path></svg><span>IP Hunter</span>
+        </button>
+        <button type="button" data-view="tickets">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h8l4 4V20a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2Z"></path><path d="M14.5 3.5V8H19M8.5 12h7M8.5 16h7"></path></svg><span>Incident Audit</span>
+        </button>
+        <button type="button" data-view="settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 19 6v5.3c0 4.2-2.9 7.5-7 9.2-4.1-1.7-7-5-7-9.2V6l7-2.5Z"></path><path d="m9 12 2 2 4-4"></path></svg><span>Settings</span>
+        </button>
+      </nav>
+      <div class="sidebar-foot"><strong>Preview build</strong><br>Illustrative data only.<br>No network actions are sent.</div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div><div class="crumb">Workspace / <span id="crumb-label">Overview</span></div><h2 class="page-title" id="page-title">Overview &amp; Network Matrix</h2></div>
+        <div class="top-actions">
+          <span class="mode"><span class="mode-dot"></span>MOCK</span>
+          <button class="button alert" type="button" id="preview-alert">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z"></path></svg>
+            Simulate alert
+          </button>
+          <span class="clock" id="clock">--:--:--</span>
+        </div>
+      </header>
+
+      <div class="preview-banner" role="note">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+        <span><strong>STATIC PROJECT PREVIEW.</strong> This file is self-contained and uses illustrative MOCK data. Buttons that would change network state are disabled; no backend or devices are contacted.</span>
+      </div>
+
+      <main>
+        <section class="view active" data-view-section="overview" aria-label="Overview and network matrix">
+          <div class="view-heading">
+            <div><div class="eyebrow">Operational overview</div><h2>Network health at a glance</h2><p>Illustrative inventory and response telemetry for the SENTRIX isolated-lab demo.</p></div>
+            <span class="tag"><span class="dot"></span>System nominal</span>
+          </div>
+          <div class="metrics">
+            <article class="metric"><div class="metric-label">Alerts today</div><div class="metric-value">12</div><div class="metric-note">+3 simulated events</div></article>
+            <article class="metric"><div class="metric-label">Quarantined</div><div class="metric-value">02</div><div class="metric-note">MOCK containment state</div></article>
+            <article class="metric"><div class="metric-label">Pending approvals</div><div class="metric-value">01</div><div class="metric-note">Human review required</div></article>
+            <article class="metric"><div class="metric-label">SPAN sessions</div><div class="metric-value">01</div><div class="metric-note">Lab telemetry only</div></article>
+            <article class="metric"><div class="metric-label">Switches</div><div class="metric-value">02</div><div class="metric-note">Configured demo inventory</div></article>
+          </div>
+
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head"><h3>Network Inventory &amp; Port Containment Matrix</h3><span class="muted" style="font-size:9px">6 demo endpoints</span></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Endpoint</th><th>Switch / Port</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+                  <tbody>
+                    <tr><td><span class="mono">192.168.10.50</span><br><span class="muted">00:1A:2B:3C:4D:50</span></td><td>SW-CORE-01<br><span class="mono">Gi0/1</span></td><td>Workstation</td><td><span class="tag"><span class="dot"></span>Secure</span></td><td><button class="button" disabled title="Static preview only">Isolate</button></td></tr>
+                    <tr><td><span class="mono">192.168.10.51</span><br><span class="muted">00:1A:2B:3C:4D:51</span></td><td>SW-DIST-01<br><span class="mono">Et1</span></td><td>Workstation</td><td><span class="tag danger"><span class="dot"></span>Isolated</span></td><td><button class="button" disabled title="Static preview only">Restore</button></td></tr>
+                    <tr><td><span class="mono">192.168.10.52</span><br><span class="muted">00:1A:2B:3C:4D:52</span></td><td>SW-CORE-01<br><span class="mono">Gi0/2</span></td><td>Workstation</td><td><span class="tag warn"><span class="dot"></span>Pending</span></td><td><button class="button" disabled title="Static preview only">Approve</button></td></tr>
+                    <tr><td><span class="mono">192.168.10.100</span><br><span class="muted">00:1A:2B:3C:4D:99</span></td><td>SW-CORE-01<br><span class="mono">Gi0/10</span></td><td>File server</td><td><span class="tag"><span class="dot"></span>Secure</span></td><td><button class="button" disabled title="Static preview only">Isolate</button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <div class="stack">
+              <section class="panel">
+                <div class="panel-head"><h3>Recent activity</h3><span class="eyebrow">MOCK</span></div>
+                <div class="panel-body activity">
+                  <div class="activity-row"><span class="dot"></span><div><div class="activity-title">Endpoint contained</div><div class="activity-meta">192.168.10.51 · VLAN 999</div></div><span class="activity-time">09:42</span></div>
+                  <div class="activity-row"><span class="dot" style="background:var(--amber)"></span><div><div class="activity-title">Approval requested</div><div class="activity-meta">Production File Server</div></div><span class="activity-time">09:38</span></div>
+                  <div class="activity-row"><span class="dot"></span><div><div class="activity-title">IP-to-port trace completed</div><div class="activity-meta">192.168.10.51 · 84 ms</div></div><span class="activity-time">09:37</span></div>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h3>Safety posture</h3></div>
+                <div class="panel-body">
+                  <div class="activity-meta" style="margin:0 0 9px">ACTIVE MODE</div><div class="tag"><span class="dot"></span>MOCK ONLY</div>
+                  <p class="muted" style="font-size:10px;line-height:1.55;margin:12px 0 0">No switch credentials are configured. All displayed devices and actions are simulated.</p>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view-section="hunter" aria-label="IP hunter and trunk guard">
+          <div class="view-heading"><div><div class="eyebrow">Discovery path</div><h2>IP-to-Port Hunter &amp; Trunk Guard</h2><p>Illustrative trace of an endpoint through an authorized lab network.</p></div><span class="tag"><span class="dot"></span>Trace complete</span></div>
+          <section class="panel">
+            <div class="panel-head"><h3>Endpoint trace</h3><span class="muted" style="font-size:9px">PREVIEW RESULT</span></div>
+            <div class="panel-body">
+              <div class="form-row"><div class="fake-input">192.168.10.51</div><button class="button" disabled>Search IP</button></div>
+              <div class="flow">
+                <div class="flow-step"><span class="flow-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M4 12h16M12 4c2.3 2.2 3.4 4.9 3.4 8S14.3 17.8 12 20M12 4c-2.3 2.2-3.4 4.9-3.4 8S9.7 17.8 12 20"></path></svg></span><b>Target IP</b><small>192.168.10.51</small></div>
+                <div class="flow-step"><span class="flow-icon"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7zM9 7h6M9 11h6M9 15h2"></path><circle cx="15" cy="17" r="1"></circle></svg></span><b>ARP MAC</b><small>00:1A:2B:3C:4D:51</small></div>
+                <div class="flow-step"><span class="flow-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 9h2M11 9h2M15 9h2M8 15h8"></path></svg></span><b>Switch hop</b><small>SW-DIST-01 · 192.168.1.3</small></div>
+                <div class="flow-step"><span class="flow-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4zM8 10v4M12 10v4M16 10v4"></path></svg></span><b>Port mode</b><small>Ethernet1 · ACCESS</small></div>
+              </div>
+              <div class="notice"><strong>Smart Trunk Guard:</strong> The discovered port is an ACCESS endpoint in this illustrative result. Trunk and multi-MAC ports are protected from VLAN quarantine.</div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" data-view-section="tickets" aria-label="Incident tickets and CLI audit">
+          <div class="view-heading"><div><div class="eyebrow">Evidence &amp; audit</div><h2>Incident Tickets &amp; CLI Audit Logs</h2><p>Example tickets, response channels, timing, and command trace.</p></div></div>
+          <section class="panel">
+            <div class="panel-head"><h3>Incident queue</h3><span class="tag"><span class="dot"></span>3 sample tickets</span></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Ticket</th><th>Target</th><th>Severity</th><th>Channel</th><th>Result</th><th>Time</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">SNTX-1003</td><td>192.168.10.51</td><td>High</td><td>Dashboard</td><td><span class="tag danger"><span class="dot"></span>Contained</span></td><td>84 ms</td></tr>
+                  <tr><td class="mono">SNTX-1002</td><td>192.168.10.100</td><td>Critical</td><td>Mobile Simulator</td><td><span class="tag warn"><span class="dot"></span>Pending</span></td><td>—</td></tr>
+                  <tr><td class="mono">SNTX-1001</td><td>192.168.10.50</td><td>Medium</td><td>Dashboard</td><td><span class="tag"><span class="dot"></span>Resolved</span></td><td>102 ms</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel" style="margin-top:13px">
+            <div class="panel-head"><h3>Executed command trace</h3><span class="muted" style="font-size:9px">ILLUSTRATIVE ONLY</span></div>
+            <div class="panel-body">
+              <div class="terminal">
+                <div class="terminal-head"><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-title">bash — netmiko-ssh (simulated)</span></div>
+                <pre>$ show mac address-table address 001a.2b3c.4d51
+Vlan    Mac Address       Type       Ports
+10      001a.2b3c.4d51    DYNAMIC    Et1
+
+$ show interfaces Ethernet1 switchport
+Administrative Mode: static access
+Operational Mode: static access
+
+# No command was sent to a device. This is sample output.</pre>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" data-view-section="settings" aria-label="Settings and ChatOps">
+          <div class="view-heading"><div><div class="eyebrow">Configuration</div><h2>Settings, Tokens &amp; ChatOps</h2><p>Safe placeholders for a public preview. Do not enter real secrets in this file.</p></div><span class="tag warn"><span class="dot"></span>Preview only</span></div>
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head"><h3>Authorization settings</h3></div>
+              <div class="panel-body">
+                <div class="setting-row"><div><div class="setting-label">Live change token</div><div class="setting-help">Unavailable in this static preview.</div></div><div class="placeholder">••••••••••••••••</div></div>
+                <div class="setting-row"><div><div class="setting-label">Approval token</div><div class="setting-help">No authorization token is stored in this file.</div></div><div class="placeholder">••••••••••••••••</div></div>
+                <div class="setting-row"><div><div class="setting-label">Runtime mode</div><div class="setting-help">This preview is hard-labeled as MOCK.</div></div><div class="placeholder" style="color:var(--green)">MOCK</div></div>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><h3>Telegram ChatOps</h3><span class="tag warn"><span class="dot"></span>Not connected</span></div>
+              <div class="panel-body">
+                <div class="setting-row"><div><div class="setting-label">Bot token</div><div class="setting-help">Never add a real bot token to a shareable HTML file.</div></div><div class="placeholder">Not configured</div></div>
+                <div class="setting-row"><div><div class="setting-label">Admin chat ID</div><div class="setting-help">Configuration is disabled in this preview.</div></div><div class="placeholder">Not configured</div></div>
+                <button class="button" disabled style="margin-top:12px">Save configuration</button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+      <footer>SENTRIX · Static visual preview · Sample data only · No live network access</footer>
+    </div>
+  </div>
+  <div class="toast" id="preview-toast" role="status" aria-live="polite">Preview only. This button does not send an alert or contact the backend.</div>
+  <script>
+    const titles = {
+      overview: ["Overview & Network Matrix", "Overview"],
+      hunter: ["IP-to-Port Hunter & Trunk Guard", "IP Hunter"],
+      tickets: ["Incident Tickets & CLI Audit Logs", "Incident Audit"],
+      settings: ["Settings, Tokens & ChatOps", "Settings"]
+    };
+    const navButtons = document.querySelectorAll("[data-view]");
+    const views = document.querySelectorAll("[data-view-section]");
+    navButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const selected = button.dataset.view;
+        navButtons.forEach((item) => {
+          item.classList.toggle("active", item === button);
+          if (item === button) item.setAttribute("aria-current", "page");
+          else item.removeAttribute("aria-current");
+        });
+        views.forEach((view) => {
+          view.classList.toggle("active", view.dataset.viewSection === selected);
+        });
+        document.getElementById("page-title").textContent = titles[selected][0];
+        document.getElementById("crumb-label").textContent = titles[selected][1];
+      });
+    });
+
+    const clock = document.getElementById("clock");
+    const updateClock = () => {
+      clock.textContent = new Intl.DateTimeFormat(undefined, {
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+      }).format(new Date());
+    };
+    updateClock();
+    window.setInterval(updateClock, 1000);
+
+    const toast = document.getElementById("preview-toast");
+    let toastTimer;
+    document.getElementById("preview-alert").addEventListener("click", () => {
+      toast.classList.add("show");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2800);
+    });
+  </script>
+</body>
+</html>

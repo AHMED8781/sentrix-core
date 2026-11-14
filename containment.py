@@ -136,6 +136,8 @@ def get_mode() -> str:
     mode = os.getenv("SENTRIX_MODE", "MOCK").strip().upper()
     if mode not in {"MOCK", "LIVE"}:
         raise ConfigurationError("SENTRIX_MODE must be MOCK or LIVE.")
+    if os.getenv("VERCEL") == "1" and mode != "MOCK":
+        raise ConfigurationError("LIVE mode is disabled when deployed on Vercel.")
     return mode
 
 

@@ -672,8 +672,8 @@
     .guard-card p { margin: 6px 0 0; color: #b6a681; font-size: 10px; line-height: 1.6; }
     .guard-card svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .trace-controls input { height: 38px; min-height: 38px; }
-    .trace-path { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-    .trace-node { min-width: 0; padding: 11px 9px; text-align: center; overflow-wrap: anywhere; }
+    .trace-path { display: flex; flex-wrap: nowrap; gap: 8px; max-width: 100%; margin: 8px 0; overflow-x: auto; padding: 2px 0 6px; }
+    .trace-node { flex: 0 0 auto; max-width: 200px; padding: 11px 9px; text-align: center; overflow-wrap: anywhere; }
     .trace-node { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
     .trace-node svg { flex: 0 0 15px; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .trace-path .trace-node:not(:last-child)::after {
@@ -803,7 +803,6 @@
       .pipeline-step:nth-child(2)::after { display: none; }
       .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .intro { margin-top: 14px; }
-      .trace-path { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 500px) {
       .topbar { gap: 8px; }
@@ -820,6 +819,344 @@
       .metrics { gap: 8px; }
       .metric { min-height: 98px; }
     }
+    .chatops-drawer {
+      position: fixed;
+      top: 12px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      width: 352px;
+      max-width: calc(100vw - 24px);
+      height: min(736px, calc(100vh - 24px));
+      padding: 7px;
+      overflow: visible;
+      border: 2px solid #FED7AA;
+      border-radius: 52px;
+      background: linear-gradient(145deg, #FDBA74 0%, #F97316 28%, #C2410C 68%, #EA580C 100%);
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, .55), inset 0 -2px 4px rgba(124, 45, 18, .8), 0 28px 70px rgba(0, 0, 0, .82);
+      animation: none;
+    }
+    .chatops-drawer::before, .chatops-drawer::after { position: absolute; z-index: 2; width: 4px; border: 1px solid #FDBA74; border-radius: 4px; background: linear-gradient(180deg, #FB923C, #9A3412); content: ""; pointer-events: none; }
+    .chatops-drawer::before { top: 138px; left: -5px; height: 26px; box-shadow: 0 42px 0 #475569, 0 74px 0 #475569; }
+    .chatops-drawer::after { top: 190px; right: -5px; height: 48px; box-shadow: 0 100px 0 -1px #64748B; }
+    .chatops-drawer[hidden] { display: none; }
+    .phone-frame {
+      display: flex;
+      flex: 1;
+      width: 100%;
+      max-width: none;
+      min-height: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 44px;
+      background: #05080F;
+      box-shadow: none;
+    }
+    .phone-screen {
+      position: relative;
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      width: 100%;
+      min-height: 0;
+      padding: 0;
+      overflow: hidden;
+      border: 3px solid #05080F;
+      border-radius: 44px;
+      background: #0E1621;
+    }
+    .phone-island {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      z-index: 3;
+      width: 82px;
+      height: 22px;
+      margin: 0;
+      transform: translateX(-50%);
+      border: 1px solid rgba(255, 255, 255, .05);
+      border-radius: 999px;
+      background: #000;
+      box-shadow: none;
+    }
+    .phone-island::after { position: absolute; top: 7px; right: 9px; width: 7px; height: 7px; border: 1px solid rgba(96, 165, 250, .25); border-radius: 50%; background: radial-gradient(circle at 35% 35%, #60A5FA, #10213B 68%); box-shadow: 0 0 5px rgba(59, 130, 246, .32); content: ""; }
+    .phone-status {
+      position: relative;
+      flex: 0 0 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 38px;
+      min-height: 38px;
+      margin: 0;
+      padding: 0 22px;
+      color: #FFF;
+      font: 12px var(--mono);
+    }
+    #phone-clock { font: 700 12px/1 ui-sans-serif, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+    .phone-status-icons { display: inline-flex; align-items: center; gap: 5px; color: #DCE7F4; }
+    .phone-status-icons svg { display: block; width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .phone-status-icons .battery-icon { width: 15px; }
+    .phone-5g { color: #FFF; font: 700 9px/1 ui-sans-serif, system-ui, sans-serif; }
+    .telegram-topbar {
+      z-index: 2;
+      display: flex;
+      flex: 0 0 62px;
+      align-items: center;
+      gap: 8px;
+      min-height: 62px;
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+      background: #17212B;
+    }
+    .telegram-topbar .telegram-avatar {
+      display: block;
+      flex: 0 0 38px;
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(56, 189, 248, .35);
+      border-radius: 50%;
+      background: #08111F;
+      object-fit: cover;
+      box-shadow: none;
+    }
+    .telegram-identity { min-width: 0; }
+    .telegram-identity strong { display: flex; align-items: center; gap: 4px; color: #F4F7FB; font-size: 12px; }
+    .telegram-identity .verified-badge { width: 13px; height: 13px; color: #38BDF8; }
+    .telegram-identity span { display: block; margin-top: 3px; color: #38BDF8; font-size: 9px; }
+    .telegram-header-actions { display: flex; align-items: center; gap: 5px; margin-left: auto; }
+    .telegram-header-button {
+      display: grid;
+      flex: 0 0 32px;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: #AFC0D0;
+      transition: transform .16s ease, opacity .16s ease;
+    }
+    .telegram-header-button:hover { background: #1F2F3F; color: #FFFFFF; }
+    .telegram-header-button:active { transform: scale(.95); }
+    .telegram-header-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .bot-config-drawer {
+      position: absolute;
+      top: 102px;
+      right: 10px;
+      z-index: 5;
+      width: min(300px, calc(100% - 20px));
+      max-height: min(390px, calc(100% - 130px));
+      overflow: auto;
+      border: 1px solid #2B3D50;
+      border-radius: 12px;
+      background: #17212B;
+      box-shadow: 0 16px 38px rgba(0, 0, 0, .62);
+    }
+    .bot-config-drawer > summary { display: none; }
+    .bot-config-drawer:not([open]) { display: none; }
+    .bot-config-fields { display: grid; gap: 8px; padding: 12px; }
+    .bot-config-fields input {
+      width: 100%;
+      min-height: 36px;
+      padding: 8px 10px;
+      border: 1px solid #2B3D50;
+      border-radius: 8px;
+      background: #0E1621;
+      color: #E5EDF8;
+      font-size: 10px;
+    }
+    .bot-config-fields .button { justify-content: center; min-height: 36px; border-color: #315A7D; background: #1B3A55; color: #D9F1FF; }
+    .chatops-config-status { color: #93A8BC; font-size: 9px; line-height: 1.45; }
+    #chatops-config-live-group { display: grid; gap: 7px; padding: 9px; border: 1px solid #5B4A31; border-radius: 8px; background: #292319; }
+    #chatops-config-live-group[hidden] { display: none; }
+    #chatops-config-live-group label { color: #F1D69D; font-size: 9px; }
+    .chat-canvas {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px 12px 8px;
+      overflow: hidden;
+      background: #0E1621;
+    }
+    .chat-encryption-banner {
+      align-self: center;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #25394D;
+      border-radius: 999px;
+      background: #17212B;
+      color: #9EB3C8;
+      font-size: 9px;
+      white-space: nowrap;
+    }
+    .chat-encryption-banner svg { width: 12px; height: 12px; fill: none; stroke: #38BDF8; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    #chatops-alerts {
+      display: flex;
+      min-height: 0;
+      flex: 1;
+      flex-direction: column;
+      gap: 12px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 1px 2px 12px 0;
+      overscroll-behavior: contain;
+      scrollbar-color: #34495D transparent;
+      scrollbar-width: thin;
+    }
+    .chat-message-group { display: grid; flex: 0 0 auto; gap: 5px; }
+    #chatops-drawer.has-pending .chat-encryption-banner { display: none; }
+    #chatops-drawer.has-pending .chat-canvas { gap: 4px; padding-top: 5px; padding-bottom: 4px; }
+    #chatops-drawer.has-pending #chatops-alerts { padding-bottom: 5px; }
+    #chatops-drawer.has-pending .chat-alert { padding: 6px 8px; }
+    #chatops-drawer.has-pending .chat-alert-subject { display: none; }
+    #chatops-drawer.has-pending .chat-telemetry-grid { margin-top: 5px; }
+    #chatops-drawer.has-pending .chat-telemetry-cell { padding: 4px; }
+    #chatops-drawer.has-pending .chat-telemetry-cell strong { margin-top: 2px; font-size: 8px; line-height: 1.2; }
+    #chatops-drawer.has-pending .chat-alert-copy { margin-top: 5px; font-size: 10px; line-height: 1.2; }
+    #chatops-drawer.has-pending .chat-receipt { margin-top: 5px; }
+    .chat-alert {
+      padding: 10px 12px;
+      border: 0;
+      border-left: 3px solid #EF4444;
+      border-radius: 16px 16px 16px 4px;
+      background: #182533;
+      box-shadow: none;
+      font-size: 12px;
+      animation: messagePop .22s ease both;
+    }
+    .chat-alert[data-tone="active"] { border-left-color: #10B981; }
+    .chat-alert[data-tone="warning"] { border-left-color: #F59E0B; }
+    .chat-bubble-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .chat-bot-name { display: inline-flex; align-items: center; gap: 5px; color: #38BDF8; font-size: 10px; font-weight: 750; }
+    .chat-alert[data-tone="critical"] .chat-bot-name { color: #FCA5A5; font-size: 10px; letter-spacing: .02em; }
+    .chat-bot-name svg { width: 13px; height: 13px; color: #38BDF8; }
+    .severity-pill { padding: 4px 6px; border: 1px solid rgba(239, 68, 68, .25); border-radius: 999px; background: rgba(239, 68, 68, .1); color: #FDA4A4; font: 7px var(--mono); white-space: nowrap; }
+    .chat-alert-subject { display: grid; gap: 3px; margin-top: 10px; }
+    .chat-alert-subject strong { color: #F0F5FA; font-size: 11px; }
+    .chat-alert-subject span { color: #9EB0C1; font-size: 9px; }
+    .chat-telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 10px;
+      overflow: hidden;
+      border: 1px solid #203143;
+      border-radius: 8px;
+      background: #203143;
+    }
+    .chat-telemetry-cell { min-width: 0; padding: 8px; background: #0E1621; }
+    .chat-telemetry-cell span { display: block; color: #788EA4; font-size: 7px; letter-spacing: .06em; text-transform: uppercase; }
+    .chat-telemetry-cell strong { display: block; margin-top: 4px; color: #D6E4F0; font: 9px/1.45 var(--mono); overflow-wrap: anywhere; }
+    .chat-alert-copy { margin: 9px 0 0; color: #AFC0D0; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+    .chat-receipt { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 9px; color: #8196AA; font: 8px var(--mono); }
+    .chat-receipt-time { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .chat-delivery-checks { color: #38BDF8; font: 700 10px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: -2px; }
+    .chat-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin: 0; padding: 5px; border-radius: 9px; background: #1F2F3F; }
+    .chat-buttons .button {
+      min-width: 0;
+      min-height: 32px;
+      height: 32px;
+      padding: 5px 7px;
+      border: 1px solid #2A4055;
+      border-radius: 8px;
+      background: #1F2F3F;
+      color: #DCE9F4;
+      font-size: 11.5px;
+      line-height: 1.15;
+      white-space: normal;
+      transition: transform .16s ease, opacity .16s ease;
+    }
+    .chat-buttons .button:hover { transform: translateY(-1px); border-color: #2B5278; background: #2B5278; box-shadow: none; }
+    .chat-buttons .button:active { transform: scale(.98); }
+    .chat-buttons .button.restore { border-color: #315B52; background: #193B36; color: #A7E9CD; }
+    .chat-buttons .button[data-chatops-decision="SURGICAL_ACL"] { border-color: #51407B; background: #2A2345; color: #D7C6FF; }
+    .chat-buttons .button:last-child { grid-column: 1 / -1; border-color: #71343B; background: #3B2028; color: #FFC0C6; }
+    .chat-buttons .button svg { width: 14px; height: 14px; }
+    .chat-welcome {
+      align-self: center;
+      width: 86%;
+      max-width: 320px;
+      margin: auto;
+      padding: 16px;
+      border: 1px solid rgba(56, 189, 248, .14);
+      border-radius: 16px;
+      background: #182533;
+    }
+    .chat-welcome-title { display: flex; align-items: center; gap: 8px; color: #F0F5FA; font-size: 12px; font-weight: 700; }
+    .chat-welcome-badge { display: inline-grid; flex: 0 0 22px; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #123B56; color: #38BDF8; font-size: 12px; }
+    .chatops-empty { margin: 7px 0 10px; color: #9EB0C1; font-size: 10px; text-align: left; line-height: 1.45; }
+    .chat-welcome ul { display: grid; gap: 7px; margin: 0; padding: 0; color: #C4D3E0; font-size: 9px; line-height: 1.4; list-style: none; }
+    .chat-welcome li::before { margin-right: 6px; color: #38BDF8; content: "•"; }
+    .chat-result { display: grid; flex: 0 0 auto; gap: 5px; margin: 2px auto; padding: 11px 13px; width: 86%; border: 1px solid rgba(56, 189, 248, .2); border-radius: 12px; background: #17212B; }
+    .chat-result span { color: #9EB0C1; font-size: 9px; }
+    .chat-result strong { color: #6EE7B7; font-size: 12px; }
+    .chat-result[data-decision="REJECT"] strong { color: #FDA4A4; }
+    .chat-composer {
+      display: flex;
+      flex: 0 0 auto;
+      flex-direction: column;
+      padding: 0;
+      background: #17212B;
+    }
+    .chat-command-row { display: flex; flex: 0 0 46px; align-items: center; gap: 8px; height: 46px; padding: 6px 10px; background: #17212B; }
+    .chat-command-input {
+      flex: 1;
+      min-width: 0;
+      height: 32px;
+      min-height: 32px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 16px;
+      background: #0E1621;
+      color: #6C7883;
+      font-size: 12px;
+    }
+    .chat-command-input::placeholder { color: #71859A; }
+    .telegram-menu-button { display: inline-grid; flex: 0 0 28px; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #2AABEE; color: #FFF; font: 700 11px/1 ui-monospace, monospace; }
+    .telegram-send-button { display: inline-grid; flex: 0 0 30px; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: #2AABEE; color: #FFF; }
+    .telegram-send-button svg { width: 16px; height: 16px; fill: currentColor; }
+    #chatops-demo-test {
+      align-self: center;
+      flex: 0 0 auto;
+      min-height: 24px;
+      height: 24px;
+      padding: 0 10px;
+      border: 1px solid rgba(56, 189, 248, .35);
+      border-radius: 999px;
+      background: linear-gradient(100deg, #0369A1, #1D4ED8);
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    #chatops-demo-test svg { display: none; }
+    .chat-command-chips { display: flex; flex: 0 0 34px; align-items: center; justify-content: space-between; gap: 6px; height: 34px; padding: 0 10px; }
+    .chat-filter-group { display: flex; align-items: center; gap: 6px; }
+    .chat-filter {
+      min-height: 24px;
+      height: 24px;
+      padding: 0 10px;
+      border: 1px solid #293B4D;
+      border-radius: 999px;
+      background: #0E1621;
+      color: #8EA4B9;
+      font: 11px var(--mono);
+      transition: transform .16s ease, opacity .16s ease;
+    }
+    .chat-filter:hover, .chat-filter[aria-pressed="true"] { border-color: #2B5278; background: #1B3348; color: #BCE8FF; }
+    .chat-filter:active { transform: scale(.97); }
+    .phone-home-area { display: flex; flex: 0 0 16px; align-items: center; justify-content: center; height: 16px; background: #17212B; }
+    .phone-home-indicator { width: 116px; height: 4px; margin: 4px auto; border-radius: 99px; background: rgba(255, 255, 255, .38); }
+    @media (max-width: 387px) { .chatops-drawer { right: 12px; width: calc(100vw - 24px); } }
   </style>
 </head>
 <body>
@@ -1027,14 +1364,10 @@
               </div>
             </section>
           </div>
-          <details class="chatops-config settings-config" open>
-            <summary>Telegram bot configuration</summary>
-            <div class="chatops-config-status" id="telegram-config-status">Checking Telegram configuration…</div>
-            <input id="telegram-bot-token" type="password" autocomplete="off" placeholder="Telegram bot token (kept in memory only)" aria-label="Telegram bot token">
-            <input id="telegram-chat-id" type="text" autocomplete="off" placeholder="Admin Telegram chat ID" aria-label="Telegram admin chat ID">
-            <button class="button" id="telegram-config-save" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Z"></path><path d="M8 4v6h8V4M8 20v-6h8v6"></path></svg>Save Telegram settings</button>
-            <button class="button" id="chatops-demo-test" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.2 2.8 5.5 13h5.2l-.8 8.2L18.5 11h-5.3l.8-8.2Z"></path></svg>Send demo critical alert</button>
-          </details>
+          <section class="panel">
+            <div class="panel-header"><h2 class="panel-title"><span class="accent"></span>Telegram bot</h2></div>
+            <div class="panel-body"><p class="operation-message">Open ChatOps Phone and select the gear icon to manage the optional Telegram approval channel.</p></div>
+          </section>
         </div>
         <dialog id="change-dialog" aria-labelledby="dialog-title">
           <form method="dialog" class="dialog-content" id="change-form">
@@ -1045,12 +1378,6 @@
             <div id="approval-token-group" hidden>
               <label for="approval-token">Approval-specific token <span class="subtle">(required for LIVE approvals)</span></label>
               <input id="approval-token" type="password" autocomplete="off" placeholder="Enter the separate approval token">
-            </div>
-            <div id="chatops-config-live-group" hidden>
-              <label for="chatops-config-live-token">Live-change token for Telegram settings</label>
-              <input id="chatops-config-live-token" type="password" autocomplete="off">
-              <label for="chatops-config-live-confirm">Type I_CONFIRM_GNS3_LAB_CHANGE</label>
-              <input id="chatops-config-live-confirm" type="text" autocomplete="off">
             </div>
             <label class="confirm-check"><input id="confirm-lab" type="checkbox"><span>I confirm this change is intended for my authorized GNS3 lab.</span></label>
             <div class="dialog-actions">
@@ -1066,15 +1393,78 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <section class="chatops-drawer" id="chatops-drawer" aria-label="ChatOps mobile simulator" hidden>
-    <div class="chatops-head"><strong><svg viewBox="0 0 24 24" aria-hidden="true" style="display:inline-block;width:16px;height:16px;vertical-align:-3px;margin-right:6px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.2"></rect><path d="M10 5h4M10.5 18.5h3"></path></svg>ChatOps Mobile Alert</strong><button class="button" id="chatops-close" type="button" aria-label="Close mobile simulator"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button></div>
-    <div class="chatops-content">
-      <div class="phone-frame"><div class="phone-screen">
+    <div class="phone-frame">
+      <div class="phone-screen">
         <div class="phone-island" aria-hidden="true"></div>
-        <div class="phone-status"><span id="phone-clock">--:--</span><span>●●●  Wi-Fi  100%</span></div>
-        <div class="telegram-topbar"><span class="telegram-avatar" aria-hidden="true">S</span><div><strong>SENTRIX Response Bot</strong><span>secure lab approvals</span></div><span class="telegram-presence">BOT</span></div>
-        <p class="telegram-brand">TELEGRAM · INCIDENT RESPONSE</p>
-        <div id="chatops-alerts"><div class="chatops-empty">No critical asset is waiting for approval.</div></div>
-      </div></div>
+        <div class="phone-status">
+          <span id="phone-clock">--:--</span>
+          <span class="phone-status-icons" aria-label="5G signal strong, Wi-Fi connected, battery full">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 16v-2M7 16v-5M11 16V8M15 16V4"></path></svg>
+            <span class="phone-5g" aria-hidden="true">5G</span>
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7.5a11 11 0 0 1 15 0M5.5 10.5a6.7 6.7 0 0 1 9 0M8.5 13.5a2.5 2.5 0 0 1 3 0M10 16h.01"></path></svg>
+            <svg class="battery-icon" viewBox="0 0 22 20" aria-hidden="true"><rect x="2" y="5" width="16" height="10" rx="2"></rect><path d="M20 8v4M5 8h10v4H5z"></path></svg>
+          </span>
+        </div>
+        <header class="telegram-topbar">
+          <img class="telegram-avatar" src="/static/logo.jpg" alt="">
+          <div class="telegram-identity">
+            <strong>SENTRIX Guard <svg class="verified-badge" viewBox="0 0 16 16" aria-label="Verified"><path fill="currentColor" d="M8 0 9.7 1l2-.1.9 1.8 1.8.9-.1 2L15.2 8l-.9 1.8.1 2-1.8.9-.9 1.8-2-.1L8 15.2l-1.8-.9-2 .1-.9-1.8-1.8-.9.1-2L.8 8l.9-1.8-.1-2 1.8-.9.9-1.8 2 .1L8 0Z"></path><path d="m4.7 8.1 2.1 2.1 4.5-4.6" fill="none" stroke="#0E1621" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></strong>
+            <span>bot · autonomous containment</span>
+          </div>
+          <div class="telegram-header-actions">
+            <button class="telegram-header-button" type="button" aria-label="Open bot configuration" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"></path><path d="m19.4 13.5 1.1.9-1.6 2.8-1.4-.6a7.7 7.7 0 0 1-1.8 1l-.2 1.5h-3.2l-.2-1.5a7.7 7.7 0 0 1-1.8-1l-1.4.6-1.6-2.8 1.1-.9a7.2 7.2 0 0 1 0-2l-1.1-.9 1.6-2.8 1.4.6a7.7 7.7 0 0 1 1.8-1l.2-1.5h3.2l.2 1.5a7.7 7.7 0 0 1 1.8 1l1.4-.6 1.6 2.8-1.1.9a7.2 7.2 0 0 1 0 2Z"></path></svg>
+            </button>
+            <button class="telegram-header-button" id="chatops-close" type="button" aria-label="Close mobile simulator">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+            </button>
+          </div>
+        </header>
+        <details class="bot-config-drawer" id="telegram-bot-config">
+          <summary>Bot configuration</summary>
+          <div class="bot-config-fields">
+            <div class="chatops-config-status" id="telegram-config-status">Checking Telegram configuration…</div>
+            <input id="telegram-bot-token" type="password" autocomplete="off" placeholder="Telegram bot token (kept in memory only)" aria-label="Telegram bot token">
+            <input id="telegram-chat-id" type="text" autocomplete="off" placeholder="Admin Telegram chat ID" aria-label="Telegram admin chat ID">
+            <div id="chatops-config-live-group" hidden>
+              <label for="chatops-config-live-token">Live-change token for Telegram settings</label>
+              <input id="chatops-config-live-token" type="password" autocomplete="off">
+              <label for="chatops-config-live-confirm">Type I_CONFIRM_GNS3_LAB_CHANGE</label>
+              <input id="chatops-config-live-confirm" type="text" autocomplete="off">
+            </div>
+            <button class="button" id="telegram-config-save" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Z"></path><path d="M8 4v6h8V4M8 20v-6h8v6"></path></svg>Save Telegram settings</button>
+          </div>
+        </details>
+        <div class="chat-canvas">
+          <div class="chat-encryption-banner"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"></path></svg>End-to-End SecOps Telemetry Stream</div>
+          <div id="chatops-alerts">
+            <article class="chat-welcome">
+              <div class="chat-welcome-title"><span class="chat-welcome-badge" aria-hidden="true">✓</span><strong>What can SENTRIX Guard do?</strong></div>
+              <p class="chatops-empty">No critical asset is waiting for approval.</p>
+              <ul>
+                <li>Instant Critical Asset Approval</li>
+                <li>1-Tap VLAN Isolate &amp; Surgical ACL</li>
+                <li>Smart Trunk Guard Protection</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+        <div class="chat-composer">
+          <div class="chat-command-chips" aria-label="Chat commands">
+            <span class="chat-filter-group">
+              <button class="chat-filter" type="button" data-chat-filter="pending" aria-pressed="false">/pending</button>
+              <button class="chat-filter" type="button" data-chat-filter="all" aria-pressed="true">/all</button>
+            </span>
+            <button class="button primary" id="chatops-demo-test" type="button" aria-label="Simulate alert">⚡ /simulate_alert</button>
+          </div>
+          <div class="chat-command-row">
+            <span class="telegram-menu-button" aria-hidden="true">[/]</span>
+            <input class="chat-command-input" type="text" placeholder="Message @sentrix_guard_bot..." aria-label="Chat command input" readonly>
+            <button class="telegram-send-button" type="button" aria-label="Send simulated alert"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20.5 21 12 3 3.5l.5 6.8L15 12 3.5 13.7 3 20.5Z"></path></svg></button>
+          </div>
+        </div>
+        <div class="phone-home-area" aria-hidden="true"><span class="phone-home-indicator"></span></div>
+      </div>
     </div>
   </section>
   <script>
@@ -1084,6 +1474,8 @@
       inventory: [],
       tickets: [],
       pendingApprovals: [],
+      chatopsResult: null,
+      chatopsFilter: "all",
       busy: false,
       pending: null,
       chatopsPending: null,
@@ -1435,9 +1827,32 @@
       return payload;
     }
 
+    function recordChatOpsResult(alertId, action, result) {
+      const alert = state.pendingApprovals.find((item) => item.alert_id === alertId);
+      state.chatopsResult = {
+        decision: action === "reject" ? "REJECT" : "APPROVE",
+        status: result.status === "REJECTED"
+          ? "REJECTED"
+          : action === "approve_acl" ? "APPROVED — SURGICAL ACL" : "APPROVED — ISOLATED",
+        assetName: alert?.asset_name || "Critical asset",
+        alertId
+      };
+    }
+
+    function renderChatOpsResult() {
+      const result = state.chatopsResult;
+      if (!result) return "";
+      return `<article class="chat-result" data-decision="${escapeHtml(result.decision)}" role="status">
+        <span>DECISION RECORDED · ${escapeHtml(result.assetName)} · ${escapeHtml(result.alertId)}</span>
+        <strong>${escapeHtml(result.status)}</strong>
+      </article>`;
+    }
+
     function renderChatOps() {
       const container = byId("chatops-alerts");
+      const resultMarkup = renderChatOpsResult();
       const pendingBadge = byId("chatops-launcher").querySelector(".pending-count");
+      byId("chatops-drawer").classList.toggle("has-pending", state.pendingApprovals.length > 0);
       pendingBadge.textContent = String(state.pendingApprovals.length);
       pendingBadge.hidden = state.pendingApprovals.length === 0;
       byId("chatops-launcher").classList.toggle("has-pending", state.pendingApprovals.length > 0);
@@ -1446,35 +1861,85 @@
         : "ChatOps Phone");
       if (!state.pendingApprovals.length) {
         state.chatopsAutoOpened = false;
-        container.innerHTML = '<div class="chatops-empty">No critical asset is waiting for approval.</div>';
+        container.innerHTML = `${resultMarkup}
+          <article class="chat-welcome">
+            <div class="chat-welcome-title"><span class="chat-welcome-badge" aria-hidden="true">✓</span><strong>What can SENTRIX Guard do?</strong></div>
+            <p class="chatops-empty">No critical asset is waiting for approval.</p>
+            <ul>
+              <li>Instant Critical Asset Approval</li>
+              <li>1-Tap VLAN Isolate &amp; Surgical ACL</li>
+              <li>Smart Trunk Guard Protection</li>
+            </ul>
+          </article>`;
         return;
       }
       if (!state.chatopsAutoOpened) {
         openChatOps();
         state.chatopsAutoOpened = true;
       }
-      container.innerHTML = state.pendingApprovals.map((alert) => `
-        <article class="chat-alert">
-          <p class="chat-alert-title">${icon("warning")} Critical asset approval</p>
-          <p class="chat-alert-copy">
-            Alert: ${escapeHtml(alert.alert_id)}<br>
-            Asset: ${escapeHtml(alert.asset_name)}<br>
-            Compromised IP: ${escapeHtml(alert.attacker_ip)}<br>
-            Switch / port: ${escapeHtml(alert.discovered_switch)} / ${escapeHtml(alert.discovered_port)}<br>
-            Port mode: ${escapeHtml(alert.port_type === "trunk" ? "Trunk" : alert.port_type === "multi-mac" ? "Access (multi-MAC)" : "Access")}<br>
-            Severity: ${escapeHtml(alert.severity)} · ${escapeHtml(alert.signature)}
-          </p>
-          <div class="chat-buttons">
-            <button class="button restore" data-chat-alert="${escapeHtml(alert.alert_id)}" data-chat-action="approve_vlan">${icon("shield")}Isolate VLAN</button>
-            <button class="button" data-chat-alert="${escapeHtml(alert.alert_id)}" data-chat-action="approve_acl">${icon("network")}Surgical ACL Only</button>
-            <button class="button" data-chat-alert="${escapeHtml(alert.alert_id)}" data-chat-action="reject">${icon("close")}Reject / False Positive</button>
-          </div>
-        </article>`).join("");
+      container.innerHTML = resultMarkup + state.pendingApprovals.map((alert) => {
+        const restrictedPort = alert.port_type === "trunk" || alert.port_type === "multi-mac";
+        const portMode = alert.port_type === "trunk"
+          ? "Trunk"
+          : alert.port_type === "multi-mac" ? "Access · multi-MAC" : "Access";
+        const vlanMode = alert.isolation_vlan
+          ? `VLAN ${escapeHtml(alert.isolation_vlan)} · ${escapeHtml(portMode)}`
+          : `Awaiting decision · ${escapeHtml(portMode)}`;
+        const trunkGuard = alert.trunk_guard_warning
+          ? warningText(alert.trunk_guard_warning)
+          : restrictedPort ? "Surgical ACL recommended" : "Access port · verify before isolation";
+        const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        return `
+          <div class="chat-message-group" data-chat-status="pending">
+            <article class="chat-alert" data-tone="critical">
+              <div class="chat-bubble-head">
+                <span class="chat-bot-name">🚨 CRITICAL INCOMING ALERT</span>
+                <span class="severity-pill">WAITING FOR APPROVAL</span>
+              </div>
+              <div class="chat-alert-subject">
+                <strong>${escapeHtml(alert.asset_name)}</strong>
+                <span>Critical asset · analyst decision required</span>
+              </div>
+              <div class="chat-telemetry-grid">
+                <div class="chat-telemetry-cell"><span>Target Host</span><strong>${escapeHtml(alert.attacker_ip)} · ${escapeHtml(alert.asset_name)}</strong></div>
+                <div class="chat-telemetry-cell"><span>Switch / Port</span><strong>${escapeHtml(alert.discovered_switch)} · ${escapeHtml(alert.discovered_port)}</strong></div>
+                <div class="chat-telemetry-cell"><span>VLAN / Mode</span><strong>${vlanMode}</strong></div>
+                <div class="chat-telemetry-cell"><span>Trunk Guard</span><strong>${escapeHtml(trunkGuard)}</strong></div>
+              </div>
+              <p class="chat-alert-copy">${escapeHtml(alert.signature)}</p>
+              <div class="chat-receipt">
+                <span>Alert ${escapeHtml(alert.alert_id)}</span>
+                <span class="chat-receipt-time">${timestamp}<span class="chat-delivery-checks" aria-label="Delivered">✓✓</span></span>
+              </div>
+            </article>
+            <div class="chat-buttons" aria-label="Approval actions">
+              <button class="button restore" data-chat-alert="${escapeHtml(alert.alert_id)}" data-chat-action="approve_vlan" data-chatops-decision="ISOLATE_VLAN">✓ Approve · Isolate VLAN</button>
+              <button class="button" data-chat-alert="${escapeHtml(alert.alert_id)}" data-chat-action="approve_acl" data-chatops-decision="SURGICAL_ACL">🛡️ Approve · Surgical ACL</button>
+              <button class="button" data-chat-alert="${escapeHtml(alert.alert_id)}" data-chat-action="reject" data-chatops-decision="REJECT">✕ Reject Alert</button>
+            </div>
+          </div>`;
+      }).join("");
       container.querySelectorAll("button[data-chat-action]").forEach((button) => {
         button.addEventListener("click", () =>
           runChatOpsAction(button.dataset.chatAlert, button.dataset.chatAction)
         );
       });
+      setChatOpsFilter(state.chatopsFilter);
+    }
+
+    function setChatOpsFilter(filter) {
+      state.chatopsFilter = filter;
+      document.querySelectorAll(".chat-filter").forEach((button) => {
+        const selected = button.dataset.chatFilter === filter;
+        button.setAttribute("aria-pressed", String(selected));
+      });
+      document.querySelectorAll(".chat-message-group").forEach((message) => {
+        message.hidden = filter === "pending" && message.dataset.chatStatus !== "pending";
+      });
+      if (filter === "pending") {
+        const container = byId("chatops-alerts");
+        container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+      }
     }
 
     async function refreshTelegramConfig() {
@@ -1555,6 +2020,7 @@
             channel: "Mobile Simulator"
           })
         });
+        recordChatOpsResult(alertId, action, result);
         showToast(result.status === "REJECTED"
           ? "Critical alert rejected; no containment was performed."
           : "ChatOps approval processed. Smart Trunk Guard is still enforced.");
@@ -1573,13 +2039,27 @@
         showToast("The simulated critical-asset alert is available in MOCK mode only.");
         return;
       }
+      if (state.busy) return;
+      setBusy(true);
       try {
-        await request("/api/chatops/test", { method: "POST" });
+        const result = await request("/api/chatops/test", { method: "POST" });
+        if (result.status !== "PENDING_APPROVAL" || !result.alert_id) {
+          throw new Error("The demo did not create a pending critical alert.");
+        }
+        state.chatopsResult = null;
+        state.chatopsFilter = "pending";
         openChatOps();
-        showToast("Critical asset approval sent to the mobile simulator.");
         await refresh();
+        if (!state.pendingApprovals.some((alert) => alert.alert_id === result.alert_id)) {
+          throw new Error("The pending critical alert could not be loaded in ChatOps.");
+        }
+        setChatOpsFilter("pending");
+        showToast("Critical asset alert is waiting for your decision.");
       } catch (error) {
         showToast(error.message);
+        await refresh();
+      } finally {
+        setBusy(false);
       }
     }
 
@@ -1789,6 +2269,7 @@
               channel: "Mobile Simulator"
             })
           });
+          recordChatOpsResult(state.chatopsPending.alertId, state.chatopsPending.action, result);
           showToast(result.status === "REJECTED"
             ? "Critical alert rejected; no containment was performed."
             : "ChatOps approval processed. Smart Trunk Guard is still enforced.");
@@ -1896,8 +2377,23 @@
       byId("chatops-drawer").hidden = true;
       byId("chatops-launcher").setAttribute("aria-expanded", "false");
     });
+    const configDrawer = document.querySelector(".bot-config-drawer");
+    const configToggle = document.querySelector(".telegram-header-actions .telegram-header-button");
+    configToggle.addEventListener("click", () => {
+      configDrawer.open = !configDrawer.open;
+      configToggle.setAttribute("aria-expanded", String(configDrawer.open));
+      configToggle.setAttribute("aria-label", configDrawer.open ? "Close bot configuration" : "Open bot configuration");
+    });
+    configDrawer.addEventListener("toggle", () => {
+      configToggle.setAttribute("aria-expanded", String(configDrawer.open));
+      configToggle.setAttribute("aria-label", configDrawer.open ? "Close bot configuration" : "Open bot configuration");
+    });
+    document.querySelectorAll(".chat-filter").forEach((button) => {
+      button.addEventListener("click", () => setChatOpsFilter(button.dataset.chatFilter));
+    });
     byId("telegram-config-save").addEventListener("click", saveTelegramConfig);
     byId("chatops-demo-test").addEventListener("click", triggerChatOpsDemo);
+    document.querySelector(".telegram-send-button").addEventListener("click", () => byId("chatops-demo-test").click());
     byId("hunt-form").addEventListener("submit", (event) => {
       event.preventDefault();
       activateView("hunter");

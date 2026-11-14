@@ -1,3 +1,4 @@
+import asyncio
 import json
 import sqlite3
 import sys
@@ -11,6 +12,85 @@ import containment
 import database as db
 import main
 from main import app
+
+
+def test_live_mode_is_rejected_on_vercel(monkeypatch):
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("SENTRIX_MODE", "LIVE")
+
+    with pytest.raises(containment.ConfigurationError, match="disabled.*Vercel"):
+        containment.get_mode()
+
+
+def test_resolved_db_path_uses_writable_temp_on_vercel(monkeypatch, tmp_path):
+    temp_db = tmp_path / "vercel" / "sentrix.db"
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.delenv("SENTRIX_DB_PATH", raising=False)
+    monkeypatch.delenv("DB_PATH", raising=False)
+    monkeypatch.setattr(db, "DB_PATH", db._DEFAULT_DB_PATH)
+    monkeypatch.setattr(db, "_SERVERLESS_DB_PATH", str(temp_db))
+
+    assert db._resolved_db_path() == str(temp_db)
+    assert temp_db.parent.is_dir()
+
+
+@pytest.mark.parametrize("env_name", ["SENTRIX_DB_PATH", "DB_PATH"])
+def test_explicit_db_path_overrides_vercel_default(monkeypatch, tmp_path, env_name):
+    configured_db = tmp_path / env_name / "custom.db"
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.delenv("SENTRIX_DB_PATH", raising=False)
+    monkeypatch.delenv("DB_PATH", raising=False)
+    monkeypatch.setenv(env_name, str(configured_db))
+    monkeypatch.setattr(db, "DB_PATH", db._DEFAULT_DB_PATH)
+
+    assert db._resolved_db_path() == str(configured_db)
+    assert configured_db.parent.is_dir()
+
+
+def test_resolved_db_path_uses_writable_temp_when_cwd_is_not_writable(
+    monkeypatch, tmp_path
+):
+    temp_db = tmp_path / "readonly" / "sentrix.db"
+    monkeypatch.delenv("VERCEL", raising=False)
+    monkeypatch.delenv("SENTRIX_DB_PATH", raising=False)
+    monkeypatch.delenv("DB_PATH", raising=False)
+    monkeypatch.setattr(db, "DB_PATH", db._DEFAULT_DB_PATH)
+    monkeypatch.setattr(db, "_SERVERLESS_DB_PATH", str(temp_db))
+    monkeypatch.setattr(db.os, "access", lambda *_: False)
+
+    assert db._resolved_db_path() == str(temp_db)
+    assert temp_db.parent.is_dir()
+
+
+def test_resolved_db_path_keeps_local_default_when_cwd_is_writable(monkeypatch):
+    monkeypatch.delenv("VERCEL", raising=False)
+    monkeypatch.delenv("SENTRIX_DB_PATH", raising=False)
+    monkeypatch.delenv("DB_PATH", raising=False)
+    monkeypatch.setattr(db, "DB_PATH", db._DEFAULT_DB_PATH)
+    monkeypatch.setattr(db.os, "access", lambda *_: True)
+
+    assert db._resolved_db_path() == db._DEFAULT_DB_PATH
+
+
+def test_vercel_lifespan_skips_telegram_poller(monkeypatch, tmp_path):
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("SENTRIX_MODE", "MOCK")
+    monkeypatch.setattr(db, "DB_PATH", str(tmp_path / "vercel.db"))
+    created_tasks = []
+    create_task = asyncio.create_task
+
+    def track_task(coro):
+        created_tasks.append(coro)
+        return create_task(coro)
+
+    monkeypatch.setattr(main.asyncio, "create_task", track_task)
+
+    async def run_lifespan():
+        async with main.lifespan(app):
+            pass
+
+    asyncio.run(run_lifespan())
+    assert created_tasks == []
 
 
 @pytest.fixture
@@ -154,6 +234,9 @@ def _create_chatops_demo_alert(client):
     assert response.status_code == 202
     pending = response.json()
     assert pending["status"] == "PENDING_APPROVAL"
+    repeated = client.post("/api/chatops/test")
+    assert repeated.status_code == 202
+    assert repeated.json()["alert_id"] == pending["alert_id"]
     return pending["alert_id"]
 
 
@@ -184,6 +267,10 @@ def test_chatops_vlan_approval_creates_ticket_with_channel_and_audit(client):
     assert operation["approval_channel"] == "Mobile Simulator"
     assert operation["approved_action"] == "vlan_isolation"
     assert operation["executed_cli"] == ticket["executed_cli"]
+    rearmed = client.post("/api/chatops/test")
+    assert rearmed.status_code == 202
+    assert rearmed.json()["alert_id"] != alert_id
+    assert db.lookup_host("192.168.10.100")["port_status"] == "PENDING_APPROVAL"
 
 
 def test_chatops_acl_approval_uses_surgical_acl_and_audits(client):
@@ -205,6 +292,18 @@ def test_chatops_acl_approval_uses_surgical_acl_and_audits(client):
     assert ticket["approved_action"] == "surgical_acl"
     assert "ip access-group SENTRIX_ACL_192_168_10_100 in" in ticket["executed_cli"]
     assert db.lookup_host("192.168.10.100")["current_vlan"] == 10
+    conn = db._connect()
+    try:
+        conn.execute(
+            "UPDATE network_inventory SET port_status = 'ACL_RESTRICTED' WHERE host_ip = ?",
+            ("192.168.10.100",),
+        )
+    finally:
+        conn.close()
+    rearmed = client.post("/api/chatops/test")
+    assert rearmed.status_code == 202
+    assert rearmed.json()["alert_id"] != alert_id
+    assert db.lookup_host("192.168.10.100")["port_status"] == "PENDING_APPROVAL"
 
 
 def test_chatops_rejection_is_audited_without_creating_containment_ticket(client):
@@ -227,6 +326,9 @@ def test_chatops_rejection_is_audited_without_creating_containment_ticket(client
     assert operation["approval_channel"] == "Mobile Simulator"
     assert operation["approved_action"] == "rejected"
     assert operation["approval_response_ms"] >= 0
+    repeated = client.post("/api/chatops/test")
+    assert repeated.status_code == 202
+    assert repeated.json()["alert_id"] != alert_id
 
 
 def test_chatops_vlan_approval_respects_trunk_guard(client, monkeypatch):

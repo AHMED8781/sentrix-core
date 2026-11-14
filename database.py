@@ -4,13 +4,16 @@ import json
 import logging
 import os
 import sqlite3
+import tempfile
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 LOGGER = logging.getLogger("sentrix.database")
-DB_PATH = os.getenv("SENTRIX_DB_PATH", str(Path(__file__).with_name("sentrix.db")))
+_DEFAULT_DB_PATH = str(Path(__file__).with_name("sentrix.db"))
+_SERVERLESS_DB_PATH = str(Path(tempfile.gettempdir()) / "sentrix.db")
+DB_PATH = os.getenv("SENTRIX_DB_PATH") or os.getenv("DB_PATH") or _DEFAULT_DB_PATH
 APPROVAL_TTL = timedelta(minutes=30)
 
 _SEED_INVENTORY = [
@@ -98,7 +101,16 @@ CREATE TABLE IF NOT EXISTS switch_operation_locks (
 
 
 def _resolved_db_path() -> str:
-    path = Path(DB_PATH).expanduser()
+    configured_path = os.getenv("SENTRIX_DB_PATH") or os.getenv("DB_PATH")
+    if configured_path is None and DB_PATH != _DEFAULT_DB_PATH:
+        configured_path = DB_PATH
+
+    use_writable_temp = configured_path is None and (
+        "VERCEL" in os.environ or not os.access(Path.cwd(), os.W_OK)
+    )
+    path = Path(
+        _SERVERLESS_DB_PATH if use_writable_temp else configured_path or DB_PATH
+    ).expanduser()
     if not path.is_absolute():
         path = Path(__file__).parent / path
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -494,19 +506,19 @@ def get_secure_hosts() -> List[Dict[str, Any]]:
 def claim_host(host_ip: str, action: str) -> Optional[Dict[str, Any]]:
     """Atomically transition one host into an in-progress state."""
     transitions = {
-        "isolate": ("SECURE", "ISOLATING"),
-        "restore": ("ISOLATED", "RESTORING"),
+        "isolate": ({"SECURE"}, "ISOLATING"),
+        "restore": ({"ISOLATED", "ACL_RESTRICTED"}, "RESTORING"),
     }
     if action not in transitions:
         raise ValueError("Unsupported host operation.")
-    expected, pending = transitions[action]
+    expected_statuses, pending = transitions[action]
     conn = _connect()
     try:
         conn.execute("BEGIN IMMEDIATE")
         row = conn.execute(
             "SELECT * FROM network_inventory WHERE host_ip = ?", (host_ip,)
         ).fetchone()
-        if row is None or row["port_status"] != expected:
+        if row is None or row["port_status"] not in expected_statuses:
             conn.rollback()
             return None
         if action == "restore" and row["previous_vlan"] is None:

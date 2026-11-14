@@ -2,7 +2,9 @@
 
 import asyncio
 import json
+from ipaddress import ip_address
 import logging
+import os
 import random
 import re
 import uuid
@@ -72,15 +74,20 @@ async def lifespan(app: FastAPI):
         "application_started",
         extra={"event_data": {"mode": containment.get_mode()}},
     )
-    telegram_task = asyncio.create_task(_telegram_updates_worker())
+    telegram_task = None
+    if os.getenv("VERCEL") == "1":
+        LOGGER.info("telegram_poller_disabled_for_serverless_runtime")
+    else:
+        telegram_task = asyncio.create_task(_telegram_updates_worker())
     try:
         yield
     finally:
-        telegram_task.cancel()
-        try:
-            await telegram_task
-        except asyncio.CancelledError:
-            pass
+        if telegram_task is not None:
+            telegram_task.cancel()
+            try:
+                await telegram_task
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(
@@ -747,11 +754,46 @@ def trigger_chatops_test(background_tasks: BackgroundTasks):
             detail="The simulated critical-asset alert is available only in MOCK mode.",
         )
     host_ip = "192.168.10.100"
+
+    def pending_response():
+        pending = next(
+            (item for item in db.get_pending_approvals()
+             if item["attacker_ip"] == host_ip),
+            None,
+        )
+        if pending is None:
+            return None
+        return JSONResponse(
+            status_code=202,
+            content={
+                "status": "PENDING_APPROVAL",
+                "host_ip": host_ip,
+                "alert_id": pending["alert_id"],
+                "approve_url": f"/api/approvals/{host_ip}/approve",
+                "reject_url": f"/api/approvals/{host_ip}/reject",
+            },
+        )
+
+    active = pending_response()
+    if active is not None:
+        return active
+
     host = db.lookup_host(host_ip)
+    if host is None:
+        raise HTTPException(
+            status_code=404, detail="The demo critical asset is not in the inventory."
+        )
+    if host["port_role"] not in CRITICAL_ROLES:
+        raise HTTPException(
+            status_code=409, detail="The demo host is no longer a critical asset."
+        )
+    if host["port_status"] in {"ISOLATED", "ACL_RESTRICTED"}:
+        restore_port(ip_address(host_ip), None, None)
+        host = db.lookup_host(host_ip)
     if host is None or host["port_status"] != "SECURE":
         raise HTTPException(
             status_code=409,
-            detail="The demo critical asset must be present and secure.",
+            detail="The demo critical asset could not be restored to a secure state.",
         )
     alert = AlertWebhook(
         attacker_ip=host_ip,
@@ -761,9 +803,17 @@ def trigger_chatops_test(background_tasks: BackgroundTasks):
         auto_discover=False,
         containment_mode="vlan",
     )
-    return _handle_alert(
-        alert, None, None, background_tasks=background_tasks
-    )
+    try:
+        return _handle_alert(
+            alert, None, None, background_tasks=background_tasks
+        )
+    except HTTPException as exc:
+        if exc.status_code != 409:
+            raise
+        active = pending_response()
+        if active is not None:
+            return active
+        raise
 
 
 @app.post("/api/simulate/attack")
